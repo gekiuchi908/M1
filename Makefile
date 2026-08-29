@@ -141,5 +141,9 @@ clean:
 # DO NOT DELETE
 
 check:
-	clang-tidy $(SRCS)
+	@mkdir -p check-results
+	@for src in $(SRCS); do \
+		echo "--- Checking $@" > check-results/$(notdir $(src)).txt; \
+		clang-tidy "$@" >> check-results/$(notdir $(src)).txt; \
+	done
 
