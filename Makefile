@@ -143,7 +143,8 @@ clean:
 check:
 	@mkdir -p check-results
 	@for src in $(SRCS); do \
-		echo "--- Checking $@" > check-results/$(notdir $(src)).txt; \
-		clang-tidy "$@" >> check-results/$(notdir $(src)).txt; \
+		filename=$(basename "$src"); \
+		echo "--- Checking $filename" > check-results/"$(basename "$src").txt"; \
+		clang-tidy "$src" >> check-results/"$(basename "$src").txt"; \
 	done
 
