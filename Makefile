@@ -140,3 +140,6 @@ clean:
 
 # DO NOT DELETE
 
+check:
+	clang-tidy $(SRCS)
+
