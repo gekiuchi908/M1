@@ -213,7 +213,7 @@ struct normal_encoding {
  E ## isInvalid3, \
  E ## isInvalid4
 
-static int FASTCALL checkCharRefNumber(int);
+static int FASTCALL checkCharRefNumber(int result);
 
 #include "xmltok_impl.h"
 #include "ascii.h"
@@ -1411,13 +1411,13 @@ must also be changed. */
 enum {
   UNKNOWN_ENC = -1,
   ISO_8859_1_ENC = 0,
-  US_ASCII_ENC,
-  UTF_8_ENC,
-  UTF_16_ENC,
-  UTF_16BE_ENC,
-  UTF_16LE_ENC,
+  US_ASCII_ENC = 1,
+  UTF_8_ENC = 2,
+  UTF_16_ENC = 3,
+  UTF_16BE_ENC = 4,
+  UTF_16LE_ENC = 5,
   /* must match encodingNames up to here */
-  NO_ENC
+  NO_ENC = 6
 };
 
 static const char KW_ISO_8859_1[] = {

@@ -146,11 +146,15 @@ int mean_frame_size,bitrate,fs,hsize,ssize;
 
 			if (window_switching_flag &&
 			    block_type==2 &&
-			    mixed_block_flag)
+			    mixed_block_flag) {
 				win_type=0;
-			else
-			        if (!window_switching_flag) win_type=0;
-				else win_type=block_type;
+			} else {
+			        if (!window_switching_flag) {
+					win_type=0;
+				} else {
+					win_type=block_type;
+				}
+			}
 
 		/* imdct ...
 		*/
@@ -171,7 +175,7 @@ int mean_frame_size,bitrate,fs,hsize,ssize;
 			for (;sb<32;sb++) 
 				for (i=0;i<18;i++) {
 					res[sb][i]=s[ch][sb][i];
-					s[ch][sb][i]=0.0f;
+					s[ch][sb][i]=0.0F;
 				}
 	
 		/* polyphase filterbank

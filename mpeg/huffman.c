@@ -109,7 +109,7 @@ int ret_value=0,i;
 	for (i=3;i>=0;i--) 
 		if ((x>>i) & 1) {
 			if (getbits(1)) *q++=-1;
-				else *q++=1;
+			else *q++=1;
 			ret_value++;
 		}
 		else *q++=0;

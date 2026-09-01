@@ -135,7 +135,7 @@ static void h8_itu_refresh_timer(int tnum)
 
 
 	time = ((double)TIME_TO_CYCLES(h8.cpu_number, 1) * 2.0) / tscales[ourTCR & 3];
-	time /= ((double)65536.0 - (double)ourTVAL);
+	time /= (65536.0 - (double)ourTVAL);
 
 	if (ourTCR & 4)
 	{

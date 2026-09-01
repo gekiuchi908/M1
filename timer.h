@@ -23,7 +23,7 @@ typedef struct TimerT
 	int enable;
 } TimerT;
 
-#define TIME_IN_HZ(hz)        (1.0 / (double)(hz))
+#define TIME_IN_HZ(hz)        (1.0 / (hz))
 #define TIME_IN_SEC(s)        ((double)(s))
 #define TIME_IN_MSEC(ms)      ((double)(ms) * (1.0 / 1000.0))
 #define TIME_IN_USEC(us)      ((double)(us) * (1.0 / 1000000.0))

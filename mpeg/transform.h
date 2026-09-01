@@ -8,7 +8,7 @@
  */
 extern void imdct_init();
 extern void imdct(int win_type,int sb,int ch);
-extern void poly(int ch,int i);
+extern void poly(int ch,int f);
 extern void premultiply();
 
 extern short sample_buffer[18][32][2];
@@ -19,7 +19,7 @@ extern float s[2][32][18];
 
 void imdct_init();
 void imdct(int win_type,int sb,int ch);
-void poly(int ch,int i);
+void poly(int ch,int f);
 void premultiply();
 
 short sample_buffer[18][32][2];

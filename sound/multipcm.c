@@ -300,7 +300,7 @@ static signed int inline ALFO_Step(struct _LFO *LFO)
 
 static void LFO_ComputeStep(struct _MultiPCM *ptChip,struct _LFO *LFO,UINT32 LFOF,UINT32 LFOS,int ALFO)
 {
-	float step=(float) LFOFreq[LFOF]*256.0/(float) ptChip->Rate;
+	float step=LFOFreq[LFOF]*256.0/ptChip->Rate;
 	LFO->phase_step=(unsigned int) ((float) (1<<LFO_SHIFT)*step);
 	if(ALFO)
 	{

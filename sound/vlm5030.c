@@ -253,12 +253,10 @@ static int parse_frame (void)
 			/* logerror("VLM5030 %04X end \n",VLM5030_address ); */
 			return 0;
 		}
-		else
-		{	/* silent frame */
-			int nums = ( (cmd>>2)+1 )*2;
-			/* logerror("VLM5030 %04X silent %d frame\n",VLM5030_address,nums ); */
-			return nums * FR_SIZE;
-		}
+		/* silent frame */
+		int nums = ( (cmd>>2)+1 )*2;
+		/* logerror("VLM5030 %04X silent %d frame\n",VLM5030_address,nums ); */
+		return nums * FR_SIZE;
 	}
 	/* pitch */
 	new_pitch  = ( pitchtable[get_bits( 1,5)] + pitch_offset )&0xff;
@@ -556,7 +554,6 @@ void VLM5030_VCU(int pin)
 {
 	/* direct mode / indirect mode */
 	pin_VCU = pin;
-	return;
 }
 
 /* set ST pin level  : set table address A0-A7 / start speech */

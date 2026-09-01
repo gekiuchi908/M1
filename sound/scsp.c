@@ -470,8 +470,8 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 
 	for(i=0;i<0x400;++i)
 	{
-		float fcent=(double) 1200.0*log_base_2((double)(((double) 1024.0+(double)i)/(double)1024.0));
-		fcent=(double) 44100.0*pow(2.0,fcent/1200.0);
+		float fcent=1200.0*log_base_2((double)(((double) 1024.0+(double)i)/(double)1024.0));
+		fcent=44100.0*pow(2.0,fcent/1200.0);
 		FNS_Table[i]=(float) (1<<SHIFT) *fcent;
 	}
 
@@ -541,7 +541,7 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 		t=ARTimes[i];	//In ms
 		if(t!=0.0)
 		{
-			step=(1023*1000.0)/((float) 44100.0f*t);
+			step=(1023*1000.0)/(44100.0F*t);
 			scale=(double) (1<<EG_SHIFT);
 			SCSP->ARTABLE[i]=(int) (step*scale);
 		}
@@ -549,7 +549,7 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 			SCSP->ARTABLE[i]=1024<<EG_SHIFT;
 
 		t=DRTimes[i];	//In ms
-		step=(1023*1000.0)/((float) 44100.0f*t);
+		step=(1023*1000.0)/(44100.0F*t);
 		scale=(double) (1<<EG_SHIFT);
 		SCSP->DRTABLE[i]=(int) (step*scale);
 	}

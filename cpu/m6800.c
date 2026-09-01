@@ -1020,7 +1020,7 @@ int m6800_execute(int cycles)
 				case 0xfe: ldx_ex(); break;
 				case 0xff: stx_ex(); break;
 			}
-			INCREMENT_COUNTER(cycles_6800[ireg]);
+			INCREMENT_COUNTER(cycles_6800[ireg & 0xff]);
 		}
 	} while( m6800_ICount>0 );
 
@@ -1517,7 +1517,7 @@ int m6803_execute(int cycles)
 				case 0xfe: ldx_ex(); break;
 				case 0xff: stx_ex(); break;
 			}
-			INCREMENT_COUNTER(cycles_6803[ireg]);
+			INCREMENT_COUNTER(cycles_6803[ireg & 0xff]);
 		}
 	} while( m6803_ICount>0 );
 
@@ -1950,7 +1950,7 @@ int hd63701_execute(int cycles)
 				case 0xfe: ldx_ex(); break;
 				case 0xff: stx_ex(); break;
 			}
-			INCREMENT_COUNTER(cycles_63701[ireg]);
+			INCREMENT_COUNTER(cycles_63701[ireg & 0xff]);
 		}
 	} while( hd63701_ICount>0 );
 

@@ -632,7 +632,5 @@ value:   START, REC, MEMDAT, REPEAT, SPOFF, x,x,RESET   meaning:
 //todo: ADPCM analysis
 //	if ( (DELTAT->portstate & 0xe0)==0xc0 )
 //	if ( (DELTAT->portstate & 0xe0)==0xe0 )
-
-	return;
 }
 

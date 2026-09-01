@@ -82,7 +82,8 @@ int stream_init(const char *name,int default_mixing_level,
 	stream[numstreams].ochannels[0] = (INT16 *)malloc(nDSoundSegLen * 2 * 2);	
 	stream[numstreams].chanvol[0] = (MIXER_GET_LEVEL(default_mixing_level) * 255) / 100;
 	stream[numstreams].chanpan[0] = MIXER_PAN_CENTER; //MIXER_GET_PAN(default_mixing_level);
-	strcpy(stream[numstreams].channame[0], name);
+	strncpy(stream[numstreams].channame[0], name, sizeof(stream[numstreams].channame[0]) - 1);
+	stream[numstreams].channame[0][sizeof(stream[numstreams].channame[0]) - 1] = '\0';
 
 //	printf("st %d [%s] = %d rt %d pan %d (%d)\n", numstreams, name, stream[numstreams].chanvol[0], sample_rate, stream[numstreams].chanpan[0], stream[numstreams].param);
 
@@ -120,7 +121,8 @@ int stream_init_multi(int channels,const char **names,const int *default_mixing_
 		stream[numstreams].ochannels[i] = (INT16 *)malloc(nDSoundSegLen * 2 * 2);	
 		stream[numstreams].chanvol[i] = (MIXER_GET_LEVEL(default_mixing_levels[i]) * 255) / 100;
 		stream[numstreams].chanpan[i] = MIXER_GET_PAN(default_mixing_levels[i]);
-		strcpy(stream[numstreams].channame[i], names[i]);
+		strncpy(stream[numstreams].channame[i], names[i], sizeof(stream[numstreams].channame[i]) - 1);
+		stream[numstreams].channame[i][sizeof(stream[numstreams].channame[i]) - 1] = '\0';
 
 //		printf("st %d ch %d [%s] = %d pan %d rt = %d\n", numstreams, i, names[i], stream[numstreams].chanvol[i], stream[numstreams].chanpan[i], sample_rate);
 	}
@@ -232,8 +234,8 @@ void StreamSys_Run(signed short *out, long samples)
 			for (j = 0; j < stream[i].numchan; j++)
 			{
 				sfracptr = sintptr = sacc = 0;
-				src = (INT16 *)&stream[i].ichannels[j][0];
-				dst = (INT16 *)&stream[i].ochannels[j][0];
+				src = &stream[i].ichannels[j][0];
+				dst = &stream[i].ochannels[j][0];
 
 				for (k = 0; k < samples; k++)
 				{

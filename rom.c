@@ -104,7 +104,8 @@ static int LOADROM(unzFile zipArchive, char *path, char* mem, int size, unsigned
 			if(ret == UNZ_END_OF_LIST_OF_FILE) {
 //				sprintf(estr, "Rom file %s (crc32 %08x) not found in %s\n", path, crc32, cur_zip_path);
 				return 0;
-			} else if(ret != UNZ_OK) {
+			}
+			if(ret != UNZ_OK) {
 				sprintf(estr, "unzGoToNextFile failed with error code %d, corrupt zip file (%s) ?\n", ret, cur_zip_path);
 				m1ui_message(m1ui_this, M1_MSG_ERROR, estr, 0);
 				return 0;
@@ -207,7 +208,7 @@ static int rom_loadrom(RomEntryT *entry, unzFile zipArc, int region)
 		sha1_init(&sha1ctx);
 		sha1_update(&sha1ctx, entry->length, (UINT8 *)holding);
 		sha1_final(&sha1ctx);
-		sha1_digest(&sha1ctx, 20, (UINT8 *)&sha1_bin[0]);
+		sha1_digest(&sha1ctx, 20, &sha1_bin[0]);
 
 		// now convert the SHA1 to a text format for comparison
 		psha = (UINT32 *)&sha1_bin[0];
@@ -379,11 +380,11 @@ int rom_loadgame(void)
 	}
 
 	// open the original set
-	strcpy(path, games[curgame].zipname);
-	strcat(path, ".zip");
+	snprintf(path, sizeof(path), "%s.zip", games[curgame].zipname);
 
 	// ask the UI to find it in it's ROM path (this is OS-specific)
-	strcpy(pathcpy, path);
+	strncpy(pathcpy, path, sizeof(pathcpy) - 1);
+	pathcpy[sizeof(pathcpy) - 1] = '\0';
 	if (!m1ui_message(m1ui_this, M1_MSG_MATCHPATH, pathcpy, 0))
 	{
 		if (games[curgame].parentzip[0] == 0)
@@ -392,10 +393,7 @@ int rom_loadgame(void)
 			m1ui_message(m1ui_this, M1_MSG_ERROR, path, 0);
 			return 0;
 		}
-		else
-		{
-			must_have_parent = 1;
-		}
+		must_have_parent = 1;
 	}
 
 	if (!OPENZIP(&ourRom, path))
@@ -406,22 +404,18 @@ int rom_loadgame(void)
 			m1ui_message(m1ui_this, M1_MSG_ERROR, path, 0);
 			return 0;
 		}
-		else
-		{
-			must_have_parent = 1;
-		}
+		must_have_parent = 1;
 	}
 
 	// and the parent if any
 	parentRom = NULL;
 	if (games[curgame].parentzip[0] != 0)
 	{
-		path[0] = '\0';
-		strcpy(path, games[curgame].parentzip);
-		strcat(path, ".zip");
+		snprintf(path, sizeof(path), "%s.zip", games[curgame].parentzip);
 
 		// ask the UI to find it in it's ROM path (this is OS-specific)
-		strcpy(pathcpy, path);
+		strncpy(pathcpy, path, sizeof(pathcpy) - 1);
+		pathcpy[sizeof(pathcpy) - 1] = '\0';
 		if (!m1ui_message(m1ui_this, M1_MSG_MATCHPATH, pathcpy, 0))
 		{
 			if (must_have_parent)
@@ -490,25 +484,21 @@ int rom_loadgame(void)
 			if (currgn == RGN_DISK)
 			{
 				// locate the disk
-				path[0] = '\0';
-				strcpy(path, games[curgame].roms[i].name);
-				strcat(path, ".chd");
+				snprintf(path, sizeof(path), "%s.chd", games[curgame].roms[i].name);
 
 				// ask the UI to find it in it's ROM path (this is OS-specific)
-				strcpy(pathcpy, path);
+				strncpy(pathcpy, path, sizeof(pathcpy) - 1);
+				pathcpy[sizeof(pathcpy) - 1] = '\0';
 				if (!m1ui_message(m1ui_this, M1_MSG_MATCHPATH, pathcpy, 0))
 				{
 					// not directly in a path, try setname/ in the path
-					path[0] = '\0';
-					strcpy(path, games[curgame].zipname);
 					#if WIN32
-					strcat(path, "\\");
+					snprintf(path, sizeof(path), "%s\\%s.chd", games[curgame].zipname, games[curgame].roms[i].name);
 					#else
-					strcat(path, "/");
+					snprintf(path, sizeof(path), "%s/%s.chd", games[curgame].zipname, games[curgame].roms[i].name);
 					#endif
-					strcat(path, games[curgame].roms[i].name);
-					strcat(path, ".chd");
-					strcpy(pathcpy, path);
+					strncpy(pathcpy, path, sizeof(pathcpy) - 1);
+					pathcpy[sizeof(pathcpy) - 1] = '\0';
 					if (!m1ui_message(m1ui_this, M1_MSG_MATCHPATH, pathcpy, 0))
 					{
 						sprintf(path, "Disk is missing: %s.chd", games[curgame].roms[i].name);
@@ -526,9 +516,8 @@ int rom_loadgame(void)
 					m1ui_message(m1ui_this, M1_MSG_ERROR, path, 0);
 					return 0;		
 				}
-				else
-				{
-					chd_hdr = chd_get_header(disks[curdisk]);
+
+				chd_hdr = chd_get_header(disks[curdisk]);
 
 					// convert the MD5 to a text format for comparison
 					psha = (UINT32 *)&chd_hdr->md5[0];
@@ -552,9 +541,8 @@ int rom_loadgame(void)
 						char str[256];
 
 						sprintf(str, "ERROR: disk %s checksums don't match", games[curgame].roms[i].name);
-						m1ui_message(m1ui_this, M1_MSG_ERROR, str, 0);
-						return 0;
-					}
+					m1ui_message(m1ui_this, M1_MSG_ERROR, str, 0);
+					return 0;
 				}
 			}
 			else
@@ -681,6 +669,10 @@ static int rom_findnumber(int game, int romnum)
 char *rom_getfilename(int game, int romnum)
 {
 	int rom = rom_findnumber(game, romnum);
+	if (rom == -1)
+	{
+		return NULL;
+	}
 
 	return games[game].roms[rom].name;
 }
@@ -688,6 +680,10 @@ char *rom_getfilename(int game, int romnum)
 int rom_getfilesize(int game, int romnum)
 {
 	int rom = rom_findnumber(game, romnum);
+	if (rom == -1)
+	{
+		return -1;
+	}
 
 	return games[game].roms[rom].length;
 }
@@ -695,6 +691,10 @@ int rom_getfilesize(int game, int romnum)
 int rom_getfilecrc(int game, int romnum)
 {
 	int rom = rom_findnumber(game, romnum);
+	if (rom == -1)
+	{
+		return 0;
+	}
 
 	return games[game].roms[rom].crc;
 }
@@ -725,7 +725,8 @@ int rom_getnum(int game)
 
 void rom_setpath(char *newpath)
 {
-	strcpy(path, newpath);
+	strncpy(path, newpath, sizeof(path) - 1);
+	path[sizeof(path) - 1] = '\0';
 }
 
 /* CHD glue code */
@@ -754,8 +755,6 @@ static struct chd_interface_file *chdman_open(const char *filename, const char *
 		return (struct chd_interface_file *)special_chd;
 
 	/* otherwise, open normally */
-	else
-	{
 #ifdef _WIN32
 		DWORD disposition, access, share = 0;
 		HANDLE handle;
@@ -785,7 +784,6 @@ static struct chd_interface_file *chdman_open(const char *filename, const char *
 #else
 		return (struct chd_interface_file *)fopen(filename, mode);
 #endif
-	}
 }
 
 
@@ -869,8 +867,6 @@ static UINT32 chdman_read(struct chd_interface_file *file, UINT64 offset, UINT32
 	}
 
 	/* otherwise, do it normally */
-	else
-	{
 #ifdef _WIN32
 		LONG upperPos = offset >> 32;
 		DWORD result;
@@ -895,7 +891,6 @@ static UINT32 chdman_read(struct chd_interface_file *file, UINT64 offset, UINT32
 			return rv;
 		}
 #endif
-	}
 }
 
 
@@ -914,8 +909,6 @@ static UINT32 chdman_write(struct chd_interface_file *file, UINT64 offset, UINT3
 	}
 
 	/* otherwise, do it normally */
-	else
-	{
 #ifdef _WIN32
 		LONG upperPos = offset >> 32;
 		DWORD result;
@@ -934,7 +927,6 @@ static UINT32 chdman_write(struct chd_interface_file *file, UINT64 offset, UINT3
 		fseek((FILE *)file, offset, SEEK_SET);
 		return fwrite(buffer, 1, count, (FILE *)file);
 #endif
-	}
 }
 
 
@@ -950,8 +942,6 @@ static UINT64 chdman_length(struct chd_interface_file *file)
 		return special_logicalbytes;
 
 	/* otherwise, do it normally */
-	else
-	{
 #ifdef _WIN32
 		DWORD highSize = 0, lowSize;
 		UINT64 filesize;
@@ -973,7 +963,6 @@ static UINT64 chdman_length(struct chd_interface_file *file)
 
 		return filesize;
 #endif
-	}
 }
 
 // return the CHD handle for a disk

@@ -51,7 +51,7 @@ sha1_init(struct sha1_ctx *ctx);
 void
 sha1_update(struct sha1_ctx *ctx,
 	    unsigned length,
-	    const uint8_t *data);
+	    const uint8_t *buffer);
 
 void
 sha1_final(struct sha1_ctx *ctx);

@@ -235,11 +235,11 @@ int IremGA20_sh_start(const struct MachineSound *msound)
 	IremGA20_reset();
 
 	for ( i = 0; i < 0x40; i++ )
-	IremGA20_chip.regs[i] = 0;
+		IremGA20_chip.regs[i] = 0;
 
 	for ( i = 0; i < 2; i++ ) {
-	names[i] = ch_names[i];
-	sprintf(ch_names[i],"%s Ch %d",sound_name(msound),i);
+		names[i] = ch_names[i];
+		sprintf(ch_names[i],"%s Ch %d",sound_name(msound),i);
 	}
 
 	IremGA20_chip.channel = stream_init_multi( 2, names,

@@ -13,8 +13,6 @@
 
 #ifdef STDC
 #  include <stddef.h>
-#  include <string.h>
-#  include <stdlib.h>
 #endif
 #ifdef NO_ERRNO_H
     extern int errno;
@@ -1062,7 +1060,7 @@ extern int ZEXPORT unzReadCurrentFile  (file, buf, len)
 			
 			pfile_in_zip_read_info->stream.next_in = 
                 (Bytef*)pfile_in_zip_read_info->read_buffer;
-			pfile_in_zip_read_info->stream.avail_in = (uInt)uReadThis;
+			pfile_in_zip_read_info->stream.avail_in = uReadThis;
 		}
 
 		if (pfile_in_zip_read_info->compression_method==0)
@@ -1170,8 +1168,7 @@ extern int ZEXPORT unzeof (file)
 	
 	if (pfile_in_zip_read_info->rest_read_uncompressed == 0)
 		return 1;
-	else
-		return 0;
+	return 0;
 }
 
 

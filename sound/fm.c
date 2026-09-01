@@ -937,15 +937,15 @@ INLINE void FM_KEYON(UINT8 type, FM_CH *CH , int s )
 
 		if ((type == TYPE_YM2612) || (type == TYPE_YM2608))
 		{
-		        if( (SLOT->ar + SLOT->ksr) < 32+62 )
-		        {
-			        SLOT->state = EG_ATT;    /* phase -> Attack */
+			if( (SLOT->ar + SLOT->ksr) < 32+62 )
+			{
+				SLOT->state = EG_ATT;    /* phase -> Attack */
 			}
 			else
 			{
-			        /* directly switch to Decay */
-			        SLOT->volume = MIN_ATT_INDEX;
-			        SLOT->state = EG_DEC;
+				/* directly switch to Decay */
+				SLOT->volume = MIN_ATT_INDEX;
+				SLOT->state = EG_DEC;
 			}
 		}
 		else
@@ -1825,7 +1825,6 @@ static void FMCloseTable( void )
 #ifdef SAVE_SAMPLE
 	fclose(sample[0]);
 #endif
-	return;
 }
 
 
@@ -1986,7 +1985,7 @@ static void OPNWriteMode(FM_OPN *OPN, int r, int v)
 		}
 		break;
 	case 0x24:	/* timer A High 8*/
-		OPN->ST.TA = (OPN->ST.TA & 0x03)|(((int)v)<<2);
+		OPN->ST.TA = (OPN->ST.TA & 0x03)|(v<<2);
 		break;
 	case 0x25:	/* timer A Low 2*/
 		OPN->ST.TA = (OPN->ST.TA & 0x3fc)|(v&3);

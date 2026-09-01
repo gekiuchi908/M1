@@ -153,8 +153,8 @@ void timer_run_frame(void)
 	int i;
 	long full_cycles;
 
-	cur_frame_time = (double)0.0;
-	cur_frame_left = (double)(1.0/timer_frame_rate);
+	cur_frame_time = 0.0;
+	cur_frame_left = 1.0/timer_frame_rate;
 
 	for (i = 0; i < TIMER_MAX_CPUS; i++)
 	{
@@ -188,10 +188,10 @@ void timer_run_frame(void)
 					full_cycles = timer_comp_cycles(i, runtime);
 					if (full_cycles > 0)
 					{
-		  				if (verbose) printf("cpu %d for %d cycles (time left = %f / %d)\n", i, (int)full_cycles, cur_frame_left, (int)((double)cpus[i].clock*cur_frame_left));
+		  				if (verbose) printf("cpu %d for %d cycles (time left = %f / %d)\n", i, (int)full_cycles, cur_frame_left, (int)(cpus[i].clock*cur_frame_left));
 						if (!cpus[i].spin)
 						{
-//							printf("run cpu %d for %d cycles (time left = %f / %d)\n", i, (int)full_cycles, cur_frame_left, (int)((double)cpus[i].clock*cur_frame_left)); 
+//							printf("run cpu %d for %d cycles (time left = %f / %d)\n", i, (int)full_cycles, cur_frame_left, (int)(cpus[i].clock*cur_frame_left)); 
 			 				cpus[i].emulroutine(full_cycles);
 
 							// check if slice ended early (if late we'll eat it)
@@ -356,7 +356,7 @@ int timer_add_cpu(int type, long clock, int(*runroutine)(int), int(*getcycles)(v
 	cpus[cpu].setcontext = setcontext;
 	cpus[cpu].ctx = ctx;
 
-	cpus[cpu].cycles_per_frame = clock/(double)60.0;	// frames per second
+	cpus[cpu].cycles_per_frame = clock/60.0;	// frames per second
 	cpus[cpu].cycles_per_slice = cpus[cpu].cycles_per_frame / (double)slices_per_frame;
 	cpus[cpu].sec_to_cycles = 1.0/clock;
 	cpus[cpu].inuse = 1;
@@ -616,9 +616,9 @@ void timer_setturbo(int factor)
 		clock = cpus[i].clock;
 		clock *= (double)factor;
 
-		cpus[i].cycles_per_frame = clock/(double)60.0;	// frames per second
+		cpus[i].cycles_per_frame = clock/60.0;	// frames per second
 		cpus[i].cycles_per_slice = cpus[i].cycles_per_frame / (double)slices_per_frame;
-		cpus[i].sec_to_cycles = 1.0/(double)clock;
+		cpus[i].sec_to_cycles = 1.0/clock;
 	}
 }
 

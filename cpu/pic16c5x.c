@@ -159,7 +159,7 @@ INLINE void CALCULATE_Z_FLAG(void)
 
 INLINE void CALCULATE_ADD_CARRY(void)
 {
-	if ((UINT8)(old_data) > (UINT8)(R.ALU)) {
+	if (old_data > R.ALU) {
 		SET(C_FLAG);
 	}
 	else {
@@ -169,7 +169,7 @@ INLINE void CALCULATE_ADD_CARRY(void)
 
 INLINE void CALCULATE_ADD_DIGITCARRY(void)
 {
-	if (((UINT8)(old_data) & 0x0f) > ((UINT8)(R.ALU) & 0x0f)) {
+	if ((old_data & 0x0f) > (R.ALU & 0x0f)) {
 		SET(DC_FLAG);
 	}
 	else {
@@ -179,7 +179,7 @@ INLINE void CALCULATE_ADD_DIGITCARRY(void)
 
 INLINE void CALCULATE_SUB_CARRY(void)
 {
-	if ((UINT8)(old_data) < (UINT8)(R.ALU)) {
+	if (old_data < R.ALU) {
 		CLR(C_FLAG);
 	}
 	else {
@@ -189,7 +189,7 @@ INLINE void CALCULATE_SUB_CARRY(void)
 
 INLINE void CALCULATE_SUB_DIGITCARRY(void)
 {
-	if (((UINT8)(old_data) & 0x0f) < ((UINT8)(R.ALU) & 0x0f)) {
+	if ((old_data & 0x0f) < (R.ALU & 0x0f)) {
 		CLR(DC_FLAG);
 	}
 	else {
@@ -236,15 +236,16 @@ INLINE UINT8 GET_REGFILE(offs_t addr)	/* Read from internal memory */
 					data &= R.TRISB;
 					data |= (~R.TRISB & R.PORTB);
 					break;
-		case 07:	if ((picmodel == 0x16C55) || (picmodel == 0x16C57)) {
-						data = P_IN(2);
-						data &= R.TRISC;
-						data |= (~R.TRISC & R.PORTC);
-					}
-					else {		/* PIC16C54, PIC16C56, PIC16C58 */
-						data = R.picRAM[addr];
-					}
-					break;
+		case 07:
+			if ((picmodel == 0x16C55) || (picmodel == 0x16C57)) {
+				data = P_IN(2);
+				data &= R.TRISC;
+				data |= (~R.TRISC & R.PORTC);
+			}
+			else { /* PIC16C54, PIC16C56, PIC16C58 */
+				data = R.picRAM[addr];
+			}
+			break;
 		default:	data = R.picRAM[addr]; break;
 	}
 
@@ -273,14 +274,15 @@ INLINE void STORE_REGFILE(offs_t addr, UINT8 data)	/* Write to internal memory *
 		case 05:	data &= 0xf;		/* 4-bit port (only lower 4 bits used) */
 					P_OUT(0,data & (~R.TRISA)); R.PORTA = data; break;
 		case 06:	P_OUT(1,data & (~R.TRISB)); R.PORTB = data; break;
-		case 07:	if ((picmodel == 0x16C55) || (picmodel == 0x16C57)) {
-						P_OUT(2,data & (~R.TRISC));
-						R.PORTC = data;
-					}
-					else {		/* PIC16C54, PIC16C56, PIC16C58 */
-						R.picRAM[addr] = data;
-					}
-					break;
+		case 07:
+			if ((picmodel == 0x16C55) || (picmodel == 0x16C57)) {
+				P_OUT(2,data & (~R.TRISC));
+				R.PORTC = data;
+			}
+			else { /* PIC16C54, PIC16C56, PIC16C58 */
+				R.picRAM[addr] = data;
+			}
+			break;
 		default:	R.picRAM[addr] = data; break;
 	}
 }
@@ -548,12 +550,24 @@ static void tris(void)
 {
 	switch(R.opcode.b.l & 0x7)
 	{
-		case 05:	if (R.TRISA == R.W) break;
-					else R.TRISA = R.W; P_OUT(0,R.PORTA & (~R.TRISA) & 0xf); break;
-		case 06:	if (R.TRISB == R.W) break;
-					else R.TRISB = R.W; P_OUT(1,R.PORTB & (~R.TRISB)); break;
-		case 07:	if (R.TRISC == R.W) break;
-					else R.TRISC = R.W; P_OUT(2,R.PORTC & (~R.TRISC)); break;
+		case 05:
+			if (R.TRISA != R.W) {
+				R.TRISA = R.W;
+				P_OUT(0, R.PORTA & (~R.TRISA) & 0xf);
+			}
+			break;
+		case 06:
+			if (R.TRISB != R.W) {
+				R.TRISB = R.W;
+				P_OUT(1, R.PORTB & (~R.TRISB));
+			}
+			break;
+		case 07:
+			if (R.TRISC != R.W) {
+				R.TRISC = R.W;
+				P_OUT(2, R.PORTC & (~R.TRISC));
+			}
+			break;
 		default:	illegal(); break;
 	}
 }

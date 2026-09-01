@@ -171,8 +171,8 @@ static UINT8 h8_bst8(UINT8 src, UINT8 dst);
 static UINT8 h8_bist8(UINT8 src, UINT8 dst);
 static UINT8 h8_bset8(UINT8 src, UINT8 dst);
 static UINT8 h8_bclr8(UINT8 src, UINT8 dst);
-static void h8_btst8(UINT8 src, UINT8 dst);
-static void h8_bld8(UINT8 src, UINT8 dst); // loads to carry
+static void h8_btst8(UINT8 bit, UINT8 dst);
+static void h8_bld8(UINT8 bit, UINT8 dst); // loads to carry
 static void h8_bor8(UINT8 src, UINT8 dst); // result in carry
 //static void h8_bxor8(UINT8 src, UINT8 dst);
 
@@ -221,17 +221,17 @@ static UINT8 h8_get_ccr(void)
 
 static char *h8_get_ccr_str(void)
 {
-	static char res[8];
+	static char res[9];
 
-	memset(res, 0, 8);
-	if(h8.h8iflag) strcat(res, "I"); else strcat(res, "i");
-	if(h8.h8uiflag)strcat(res, "U"); else strcat(res, "u");
-	if(h8.h8hflag) strcat(res, "H"); else strcat(res, "h");
-	if(h8.h8uflag) strcat(res, "U"); else strcat(res, "u");
-	if(h8.h8nflag) strcat(res, "N"); else strcat(res, "n");
-	if(h8.h8zflag) strcat(res, "Z"); else strcat(res, "z");
-	if(h8.h8vflag) strcat(res, "V"); else strcat(res, "v");
-	if(h8.h8cflag) strcat(res, "C"); else strcat(res, "c");
+	res[0] = h8.h8iflag ? 'I' : 'i';
+	res[1] = h8.h8uiflag ? 'U' : 'u';
+	res[2] = h8.h8hflag ? 'H' : 'h';
+	res[3] = h8.h8uflag ? 'U' : 'u';
+	res[4] = h8.h8nflag ? 'N' : 'n';
+	res[5] = h8.h8zflag ? 'Z' : 'z';
+	res[6] = h8.h8vflag ? 'V' : 'v';
+	res[7] = h8.h8cflag ? 'C' : 'c';
+	res[8] = '\0';
 	
 	return res;
 }

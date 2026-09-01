@@ -689,9 +689,9 @@ void memory_shutdown(void);
 /* memory read functions */
 data8_t memory_read8(offs_t address);
 data8_t memory_readop8(offs_t address);
-data8_t memory_readport8(offs_t address);
+data8_t memory_readport8(offs_t port);
 void memory_write8(offs_t address, data8_t data);
-void memory_writeport8(offs_t address, data8_t data);
+void memory_writeport8(offs_t port, data8_t data);
 
 /* ----- memory read functions ----- */
 data8_t cpu_readmem16(offs_t address);

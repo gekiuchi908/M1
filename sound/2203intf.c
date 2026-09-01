@@ -21,7 +21,7 @@ static void timer_callback_2203(int refcon)
 {
 	int n, c, ref;
 
-	ref = (int)refcon;
+	ref = refcon;
 	n = ref>>8;
 	c = ref&0xf;
 

@@ -39,8 +39,8 @@ register int a,scale;
 
 /* a minor change here as well, no point in abs() if we now that a<0
 */
-        if (a>=0) return tab[a&3]*(1 << (a>>2));
-	else return tabi[(-a)&3]/(1 << ((-a) >> 2));
+	if (a >= 0) return tab[a&3]*(1 << (a>>2));
+	return tabi[(-a)&3]/(1 << ((-a) >> 2));
 }
 
 static inline float fras_s(int global_gain,int subblock_gain,int scalefac_scale,int scalefac)
@@ -52,8 +52,8 @@ int a;
 
         if (a < -127) return 0;
 
-        if (a>=0) return tab[a&3]*(1 << (a>>2));
-        else return tabi[(-a)&3]/(1 << ((-a) >> 2));
+        if (a >= 0) return tab[a&3]*(1 << (a>>2));
+        return tabi[(-a)&3]/(1 << ((-a) >> 2));
 }
 
 /* this should be faster than pow()
@@ -61,7 +61,7 @@ int a;
 static inline float fras2(int is,float a)
 {
         if (is > 0) return t_43[is]*a;
-        else return -t_43[-is]*a;
+        return -t_43[-is]*a;
 }
 
 /*
@@ -502,7 +502,7 @@ scalefac_scale=info->scalefac_scale[gr];
 		*/
 	if (ms_flag)
                 while (l< isbound[0]) {
-#if defined(PENTIUM_RDTSC)
+#ifdef PENTIUM_RDTSC
 
 unsigned int cnt4, cnt3, cnt2, cnt1;
 static int min_cycles = 99999999;
@@ -518,7 +518,7 @@ static int min_cycles = 99999999;
 				xr[1][0][l]=(Mi-Si)*tmp;
 			}
 
-#if defined(PENTIUM_RDTSC)
+#ifdef PENTIUM_RDTSC
                         __asm__(".byte 0x0f,0x31" : "=a" (cnt2), "=d" (cnt4));
 
                         if (cnt2-cnt1 < min_cycles) {
@@ -528,7 +528,7 @@ static int min_cycles = 99999999;
 
 #endif
                         if (l==t_l[sfb]) {
-#if defined(PENTIUM_RDTSC2)
+#ifdef PENTIUM_RDTSC2
 
 unsigned int cnt4, cnt2, cnt1;
 static int min_cycles = 99999999;
@@ -541,7 +541,7 @@ static int min_cycles = 99999999;
 				a[0]=fras_l(sfb,global_gain[0],scalefac_scale[0],scalefac[0],preflag[0]);
 				scalefac[1]=scalefac_l[gr][1][sfb];
 				a[1]=fras_l(sfb,global_gain[1],scalefac_scale[1],scalefac[1],preflag[1]);
-#if defined(PENTIUM_RDTSC2)
+#ifdef PENTIUM_RDTSC2
                         __asm__(".byte 0x0f,0x31" : "=a" (cnt2), "=d" (cnt4));
 
                         if (cnt2-cnt1 < min_cycles) {
@@ -653,7 +653,7 @@ float a[2];
 							for (i=0;i<window_len;i++) {
 								register float tmp1=fras2(is[0][l],a[0]);
 								register float tmp2=fras2(is[1][l],a[1]);
-								xr[0][0][t_reorder[id][sfreq][l]]=(tmp1+tmp2)*0.5f;
+								xr[0][0][t_reorder[id][sfreq][l]]=(tmp1+tmp2)*0.5F;
 								l++;
 							}
 						}
@@ -717,7 +717,7 @@ float a[2];
 			while (l < isbound) {
 				register float tmp1=fras2(is[0][l],a[0]);
 				register float tmp2=fras2(is[1][l],a[1]);
-				xr[0][0][l]=(tmp1+tmp2)*0.5f;
+				xr[0][0][l]=(tmp1+tmp2)*0.5F;
 	                        if (l==t_l[sfb]) {
         	                        sfb++;
                 	                scalefac[0]=scalefac_l[gr][0][sfb];
@@ -818,5 +818,5 @@ void calculate_t43(void)
 {
 int i;
 	for (i=0;i<8192;i++)
-		t_43[i]=(float)pow((float)i,1.33333333333f);
+		t_43[i]=(float)pow((float)i,1.33333333333F);
 }

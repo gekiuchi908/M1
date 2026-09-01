@@ -56,6 +56,9 @@ int hsize,fs,mean_frame_size;
 		case 3 : nch=1; bound=32; 
 			break;
 		case 1 : nch=2; bitrate=bitrate/2; bound=(header->mode_extension+1)*4; 
+			break;
+		default:
+			return 1;
 		}
 		
 	if (header->ID==1) switch (header->sampling_frequency) {
@@ -80,7 +83,7 @@ int hsize,fs,mean_frame_size;
 					   nbal=&t_nbal2;
 					   sblimit=8;
 					   break;
-				default  : printf(" bit alloc info no gud ");
+				default  : printf(" bit alloc info no gud "); return 1;
 				}
 				break;
 		case 1 : switch (bitrate)	/* 1 = 48 kHz */
@@ -101,7 +104,7 @@ int hsize,fs,mean_frame_size;
 					   nbal=&t_nbal2;
 					   sblimit=8;
 					   break;
-				default  : printf(" bit alloc info no gud ");
+				default  : printf(" bit alloc info no gud "); return 1;
 				}
 				break;
 		case 2 : switch (bitrate)	/* 2 = 32 kHz */
@@ -125,10 +128,10 @@ int hsize,fs,mean_frame_size;
                                    nbal=&t_nbal3;
                                    sblimit=12;
 				   break;
-			default  : printf("bit alloc info not ok\n");
+			default  : printf("bit alloc info not ok\n"); return 1;
 			}
 	                break;                                                    
-		default  : printf("sampling freq. not ok/n");
+		default  : printf("sampling freq. not ok/n"); return 1;
 	} else {
 		bit_alloc_index=&t_allocMPG2;
 		nbal=&t_nbalMPG2;
@@ -162,27 +165,31 @@ int hsize,fs,mean_frame_size;
  * scalefactors ****************************************************************
  */
 
-	for (sb=0;sb<sblimit;sb++)
-	for (ch=0;ch<nch;ch++)
-		if (allocation[ch][sb]!=0) {
-			scalefactor[ch][sb][0]=t_scalefactor[getbits(6)];
-			switch (scfsi[ch][sb])
-			{
-			case 0: scalefactor[ch][sb][1]=t_scalefactor[getbits(6)];
-				scalefactor[ch][sb][2]=t_scalefactor[getbits(6)];
-				break;
-			case 1: scalefactor[ch][sb][2]=t_scalefactor[getbits(6)];
-				scalefactor[ch][sb][1]=scalefactor[ch][sb][0];
-				break;
-			case 2: scalefactor[ch][sb][1]=scalefactor[ch][sb][0];
-				scalefactor[ch][sb][2]=scalefactor[ch][sb][0];
-				break;
-			case 3: scalefactor[ch][sb][2]=t_scalefactor[getbits(6)];
-				scalefactor[ch][sb][1]=scalefactor[ch][sb][2];
-			}		 	
-		} 
-		else scalefactor[ch][sb][0]=scalefactor[ch][sb][1]=\
-			scalefactor[ch][sb][2]=0.0;
+	for (sb=0;sb<sblimit;sb++) {
+		for (ch=0;ch<nch;ch++) {
+			if (allocation[ch][sb]!=0) {
+				scalefactor[ch][sb][0]=t_scalefactor[getbits(6)];
+				switch (scfsi[ch][sb])
+				{
+				case 0: scalefactor[ch][sb][1]=t_scalefactor[getbits(6)];
+					scalefactor[ch][sb][2]=t_scalefactor[getbits(6)];
+					break;
+				case 1: scalefactor[ch][sb][2]=t_scalefactor[getbits(6)];
+					scalefactor[ch][sb][1]=scalefactor[ch][sb][0];
+					break;
+				case 2: scalefactor[ch][sb][1]=scalefactor[ch][sb][0];
+					scalefactor[ch][sb][2]=scalefactor[ch][sb][0];
+					break;
+				case 3: scalefactor[ch][sb][2]=t_scalefactor[getbits(6)];
+					scalefactor[ch][sb][1]=scalefactor[ch][sb][2];
+				}		 	
+			} 
+			else {
+				scalefactor[ch][sb][0]=scalefactor[ch][sb][1]=\
+					scalefactor[ch][sb][2]=0.0;
+			}
+		}
+	}
 
 
 /*
@@ -194,9 +201,9 @@ int hsize,fs,mean_frame_size;
 		 * normal ********************************
 		 */
    	
-		for (sb=0;sb<bound;sb++)
-		for (ch=0;ch<nch;ch++)
-		if (allocation[ch][sb]!=0) {
+		for (sb=0;sb<bound;sb++) {
+			for (ch=0;ch<nch;ch++) {
+				if (allocation[ch][sb]!=0) {
 			mpi=(*bit_alloc_index)[sb][allocation[ch][sb]];	
 			no_of_bits=t_bpc[mpi];
 			c=t_c[mpi];
@@ -217,9 +224,12 @@ int hsize,fs,mean_frame_size;
 					/*subband_sample[ch][sb][3*gr+s]=requantize_sample (sb_sample_buf[s],nlevels,c,d,scalefactor[ch][sb][gr/4]);*/
 					subband_sample[ch][sb][3*gr+s]=(t_dd[mpi]+sb_sample_buf[s]*t_nli[mpi])*c*scalefactor[ch][sb][gr>>2];
 				}
+				}
+			} else {
+				for (s=0;s<3;s++) subband_sample[ch][sb][3*gr+s]=0;
 			}
-	    	} else 
-			for (s=0;s<3;s++) subband_sample[ch][sb][3*gr+s]=0;
+		}
+		}
 
 
 		/*
@@ -277,7 +287,7 @@ int hsize,fs,mean_frame_size;
 		for (ch=0;ch<nch;ch++) 
 			for (sb=0;sb<32;sb++)
 				for (i=0;i<36;i++)
-					subband_sample[0][sb][i]=(subband_sample[0][sb][i]+subband_sample[1][sb][i])*0.5f;
+					subband_sample[0][sb][i]=(subband_sample[0][sb][i]+subband_sample[1][sb][i])*0.5F;
 		nch=1;
 	}
 

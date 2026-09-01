@@ -27,12 +27,13 @@ struct AUDIO_HEADER tmp;
 	memcpy(&tmp,header,sizeof(tmp));
 
 	while (cnt < nframes) {
-	        if (tmp.ID)
-        	        if (tmp.mode==3) hsize=21;
-                	else hsize=36;
-        	else
-                	if (tmp.mode==3) hsize=13;
-               	 	else  hsize=21;
+		if (tmp.ID) {
+			if (tmp.mode==3) hsize=21;
+			else hsize=36;
+		} else {
+			if (tmp.mode==3) hsize=13;
+			else hsize=21;
+		}
                 if (tmp.protection_bit==0) hsize+=2;
 		if ((g=dummy_getinfo(hsize)))  /* dummy_getinfo: reads hsize-4 bytes */
 			switch (g) {

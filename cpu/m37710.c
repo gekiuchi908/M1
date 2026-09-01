@@ -56,8 +56,6 @@
 #define TSET(x) timer_set(TIME_IN_HZ(time), 0, x)
 #define TSET2(x, y) timer_set(TIME_IN_HZ(m37710i_cpu.reload[y]), 0, x)
 
-extern void m37710_set_irq_line(int line, int state);
-
 /* Our CPU structure */
 m37710i_cpu_struct m37710i_cpu = {0};
 
@@ -384,7 +382,7 @@ static void m37710_recalc_timer(int timer)
 					logerror("Timer %d in timer mode\n", timer);
 					#endif					
 
-					time = (double)timer_get_cpu_clock(cpu_getactivecpu()) / tscales[m37710i_cpu.m37710_regs[tcr[timer]]>>6];
+					time = timer_get_cpu_clock(cpu_getactivecpu()) / tscales[m37710i_cpu.m37710_regs[tcr[timer]]>>6];
 					time /= ((double)tval+1.0);
 	
 //					timer_adjust(m37710i_cpu.timers[timer], TIME_IN_HZ(time), 0, 0);
@@ -431,7 +429,7 @@ static void m37710_recalc_timer(int timer)
 					logerror("Timer %d in timer mode\n", timer);
 					#endif
 
-					time = (double)timer_get_cpu_clock(cpu_getactivecpu()) / tscales[m37710i_cpu.m37710_regs[tcr[timer]]>>6];
+					time = timer_get_cpu_clock(cpu_getactivecpu()) / tscales[m37710i_cpu.m37710_regs[tcr[timer]]>>6];
 					time /= ((double)tval+1.0);
 	
 //					timer_adjust(m37710i_cpu.timers[timer], TIME_IN_HZ(time), 0, 0);

@@ -183,8 +183,8 @@ int YM2608TimerOver(int n, int c );
 
 #if (BUILD_YM2610||BUILD_YM2610B)
 /* -------------------- YM2610(OPNB) Interface -------------------- */
-int YM2610Init(int num, int baseclock, int rate,
-               void **pcmroma,int *pcmasize,void **pcmromb,int *pcmbsize,
+int YM2610Init(int num, int clock, int rate,
+               void **pcmroma,int *pcmsizea,void **pcmromb,int *pcmsizeb,
                FM_TIMERHANDLER TimerHandler,FM_IRQHANDLER IRQHandler);
 void YM2610Shutdown(void);
 void YM2610ResetChip(int num);

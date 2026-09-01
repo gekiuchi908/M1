@@ -168,9 +168,9 @@ unsigned int m68k_read_disassembler_16 (unsigned int address);
 unsigned int m68k_read_disassembler_32 (unsigned int address);
 
 /* Write to anywhere */
-void m68k_write_memory_8(unsigned int address, unsigned int value);
-void m68k_write_memory_16(unsigned int address, unsigned int value);
-void m68k_write_memory_32(unsigned int address, unsigned int value);
+void m68k_write_memory_8(unsigned int address, unsigned int data);
+void m68k_write_memory_16(unsigned int address, unsigned int data);
+void m68k_write_memory_32(unsigned int address, unsigned int data);
 
 /* Special call to simulate undocumented 68k behavior when move.l with a
  * predecrement destination mode is executed.
@@ -334,7 +334,7 @@ unsigned int m68k_context_size(void);
 unsigned int m68k_get_context(void* dst);
 
 /* set the current cpu context */
-void m68k_set_context(void* dst);
+void m68k_set_context(void* src);
 
 /* Register the CPU state information */
 void m68k_state_register(const char *type, int index);

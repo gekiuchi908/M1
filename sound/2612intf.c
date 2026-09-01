@@ -43,7 +43,7 @@ static void ym2612_callback(int refcon)
 {
 	int n, c, ref;
 
-	ref = (int)refcon;
+	ref = refcon;
 	n = ref>>8;
 	c = ref&0xf;
 

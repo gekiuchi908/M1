@@ -610,7 +610,7 @@ static int create_tables(void)
 	/* initialize the mask table */
 	for (i = 0; i < 0x4000; i++)
 	{
-		     if (i > 0x2000) mask_table[i] = 0x0000;
+		if (i > 0x2000) mask_table[i] = 0x0000;
 		else if (i > 0x1000) mask_table[i] = 0x2000;
 		else if (i > 0x0800) mask_table[i] = 0x3000;
 		else if (i > 0x0400) mask_table[i] = 0x3800;
@@ -624,7 +624,7 @@ static int create_tables(void)
 		else if (i > 0x0004) mask_table[i] = 0x3ff8;
 		else if (i > 0x0002) mask_table[i] = 0x3ffc;
 		else if (i > 0x0001) mask_table[i] = 0x3ffe;
-		else                 mask_table[i] = 0x3fff;
+		else mask_table[i] = 0x3fff;
 	}
 
 	/* initialize the condition table */

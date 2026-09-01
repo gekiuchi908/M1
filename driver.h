@@ -81,8 +81,6 @@ extern struct M1Machine *Machine;
 // disable profiling
 #define profiler_mark(x)
 
-#define TIME_IN_HZ(hz)        (1.0 / (double)(hz))   
-
 #ifdef __cplusplus
 }
 #endif

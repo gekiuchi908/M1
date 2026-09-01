@@ -930,7 +930,7 @@ INLINE UINT8 INC(UINT8 value)
 {
 	UINT8 res = value + 1;
 	_F = (_F & CF) | SZHV_inc[res];
-	return (UINT8)res;
+	return res;
 }
 
 /***************************************************************

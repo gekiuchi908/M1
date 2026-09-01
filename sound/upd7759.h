@@ -23,14 +23,14 @@ struct UPD7759_interface
 int UPD7759_sh_start (const struct MachineSound *msound);
 void UPD7759_sh_stop (void);
 
-void UPD7759_set_bank_base(int which, offs_t base);
+void UPD7759_set_bank_base(int chip, offs_t base);
 
-void UPD7759_reset_w (int num, UINT8 data);
+void UPD7759_reset_w (int chip, UINT8 data);
 
-void UPD7759_w (int num, UINT8 data);
-void UPD7759_port_w (int num, UINT8 data);
-void UPD7759_start_w (int num, UINT8 data);
-int UPD7759_busy_r (int num);
+void UPD7759_w (int chip, UINT8 data);
+void UPD7759_port_w (int chip, UINT8 data);
+void UPD7759_start_w (int chip, UINT8 data);
+int UPD7759_busy_r (int chip);
 
 WRITE_HANDLER( UPD7759_0_reset_w );
 WRITE_HANDLER( UPD7759_0_port_w );

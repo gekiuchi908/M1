@@ -41,8 +41,8 @@
 #define TRANSFORM
 #include "transform.h"
 
-#define PI12      0.261799387f
-#define PI36      0.087266462f
+#define PI12      0.261799387F
+#define PI36      0.087266462F
 
 void imdct_init()
 {
@@ -53,17 +53,17 @@ void imdct_init()
   for(i=0;i<18;i++) /* 1 */
     win[1][i] = (float) sin(PI36 *(i+0.5));
   for(i=18;i<24;i++)
-    win[1][i] = 1.0f;
+    win[1][i] = 1.0F;
   for(i=24;i<30;i++)
     win[1][i] = (float) sin(PI12 *(i+0.5-18));
   for(i=30;i<36;i++)
-    win[1][i] = 0.0f;
+    win[1][i] = 0.0F;
   for(i=0;i<6;i++) /* 3 */
-    win[3][i] = 0.0f;
+    win[3][i] = 0.0F;
   for(i=6;i<12;i++)
     win[3][i] = (float) sin(PI12 * (i+ 0.5 - 6.0));
   for(i=12;i<18;i++)
-    win[3][i] = 1.0f;
+    win[3][i] = 1.0F;
   for(i=18;i<36;i++)
     win[3][i] = (float) sin(PI36 * (i + 0.5));
 }
@@ -104,7 +104,7 @@ void imdct(int win_type,int sb,int ch)
 		for(p=0;p<36;p+=9) {
 			out[p]   = out[p+1] = out[p+2] = out[p+3] =
 			out[p+4] = out[p+5] = out[p+6] = out[p+7] =
-			out[p+8] = 0.0f;
+			out[p+8] = 0.0F;
 		}
 
 	for(ss=0;ss<18;ss+=6) {
@@ -124,8 +124,8 @@ void imdct(int win_type,int sb,int ch)
 
 		/* 3 point IDCT on even indices */
 
-		pp2 = in[4+ss] * 0.500000000f;
-		pp1 = in[2+ss] * 0.866025403f;
+		pp2 = in[4+ss] * 0.500000000F;
+		pp1 = in[2+ss] * 0.866025403F;
 		save = in[0+ss] + pp2;
 		tmp1 = in[0+ss] - in[4+ss];
 		tmp0 = save + pp1;
@@ -135,8 +135,8 @@ void imdct(int win_type,int sb,int ch)
 
 		/* 3 point IDCT on odd indices (for 6 point IDCT) */
 
-		pp2 = in[5+ss] * 0.500000000f;
-		pp1 = in[3+ss] * 0.866025403f;
+		pp2 = in[5+ss] * 0.500000000F;
+		pp1 = in[3+ss] * 0.866025403F;
 		save = in[1+ss] + pp2;
 		tmp4 = in[1+ss] - in[5+ss];
 		tmp5 = save + pp1;
@@ -146,9 +146,9 @@ void imdct(int win_type,int sb,int ch)
 
 		/* Twiddle factors on odd indices (for 6 point IDCT) */
 
-		tmp3 *= 1.931851653f;
-		tmp4 *= 0.707106781f;
-		tmp5 *= 0.517638090f;
+		tmp3 *= 1.931851653F;
+		tmp4 *= 0.707106781F;
+		tmp5 *= 0.517638090F;
 
 		/* Output butterflies on 2 3 point IDCT's (for 6 point IDCT) */
 
@@ -168,32 +168,32 @@ void imdct(int win_type,int sb,int ch)
 
 		/* Twiddle factors on indices (for 12 point IDCT) */
 
-		tmp0 *= 0.504314480f;
-		tmp1 *= 0.541196100f;
-		tmp2 *= 0.630236207f;
-		tmp3 *= 0.821339815f;
-		tmp4 *= 1.306562965f;
-		tmp5 *= 3.830648788f;
+		tmp0 *= 0.504314480F;
+		tmp1 *= 0.541196100F;
+		tmp2 *= 0.630236207F;
+		tmp3 *= 0.821339815F;
+		tmp4 *= 1.306562965F;
+		tmp5 *= 3.830648788F;
 
 		/* End 12 point IDCT */
 
 		/* Shift to 12 point modified IDCT, multiply by window type 2 */
-		tmp8  = tmp0 * -0.793353340f;
-		tmp9  = tmp0 * -0.608761429f;
-		tmp7  = tmp1 * -0.923879532f;
-		tmp10 = tmp1 * -0.382683432f;
-		tmp6  = tmp2 * -0.991444861f;
-		tmp11 = tmp2 * -0.130526192f;
+		tmp8  = tmp0 * -0.793353340F;
+		tmp9  = tmp0 * -0.608761429F;
+		tmp7  = tmp1 * -0.923879532F;
+		tmp10 = tmp1 * -0.382683432F;
+		tmp6  = tmp2 * -0.991444861F;
+		tmp11 = tmp2 * -0.130526192F;
 
 		tmp0  = tmp3;
-		tmp1  = tmp4 *  0.382683432f;
-		tmp2  = tmp5 *  0.608761429f;
+		tmp1  = tmp4 *  0.382683432F;
+		tmp2  = tmp5 *  0.608761429F;
 
-		tmp3  = tmp5 * -0.793353340f;
-		tmp4  = tmp4 * -0.923879532f;
-		tmp5  = tmp0 * -0.991444861f;
+		tmp3  = tmp5 * -0.793353340F;
+		tmp4  = tmp4 * -0.923879532F;
+		tmp5  = tmp0 * -0.991444861F;
 
-		tmp0 *= 0.130526192f;
+		tmp0 *= 0.130526192F;
 
 		out[ss + 6]  += tmp0;
 		out[ss + 7]  += tmp1;
@@ -257,19 +257,19 @@ void imdct(int win_type,int sb,int ch)
    float i0 = in[0]+in[0];
    float i0p12 = i0 + in[12];
 
-   tmp0 = i0p12 + in[4]*1.8793852415718f  + in[8]*1.532088886238f   + in[16]*0.34729635533386f;
+   tmp0 = i0p12 + in[4]*1.8793852415718F  + in[8]*1.532088886238F   + in[16]*0.34729635533386F;
    tmp1 = i0    + in[4]                   - in[8] - in[12] - in[12] - in[16];
-   tmp2 = i0p12 - in[4]*0.34729635533386f - in[8]*1.8793852415718f  + in[16]*1.532088886238f;
-   tmp3 = i0p12 - in[4]*1.532088886238f   + in[8]*0.34729635533386f - in[16]*1.8793852415718f;
+   tmp2 = i0p12 - in[4]*0.34729635533386F - in[8]*1.8793852415718F  + in[16]*1.532088886238F;
+   tmp3 = i0p12 - in[4]*1.532088886238F   + in[8]*0.34729635533386F - in[16]*1.8793852415718F;
    tmp4 = in[0] - in[4]                   + in[8] - in[12]          + in[16];
    }
    {
-   float i6_ = in[6]*1.732050808f;		
+   float i6_ = in[6]*1.732050808F;		
 
-   tmp0_ = in[2]*1.9696155060244f  + i6_ + in[10]*1.2855752193731f  + in[14]*0.68404028665134f;
-   tmp1_ = (in[2]                        - in[10]                   - in[14])*1.732050808f;
-   tmp2_ = in[2]*1.2855752193731f  - i6_ - in[10]*0.68404028665134f + in[14]*1.9696155060244f;
-   tmp3_ = in[2]*0.68404028665134f - i6_ + in[10]*1.9696155060244f  - in[14]*1.2855752193731f;
+   tmp0_ = in[2]*1.9696155060244F  + i6_ + in[10]*1.2855752193731F  + in[14]*0.68404028665134F;
+   tmp1_ = (in[2]                        - in[10]                   - in[14])*1.732050808F;
+   tmp2_ = in[2]*1.2855752193731F  - i6_ - in[10]*0.68404028665134F + in[14]*1.9696155060244F;
+   tmp3_ = in[2]*0.68404028665134F - i6_ + in[10]*1.9696155060244F  - in[14]*1.2855752193731F;
    }
 
    /* 9 point IDCT on odd indices */
@@ -278,20 +278,20 @@ void imdct(int win_type,int sb,int ch)
    float i0 = in[0+1]+in[0+1];
    float i0p12 = i0 + in[12+1];
 
-   tmp0o = i0p12   + in[4+1]*1.8793852415718f  + in[8+1]*1.532088886238f       + in[16+1]*0.34729635533386f;
+   tmp0o = i0p12   + in[4+1]*1.8793852415718F  + in[8+1]*1.532088886238F       + in[16+1]*0.34729635533386F;
    tmp1o = i0      + in[4+1]                   - in[8+1] - in[12+1] - in[12+1] - in[16+1];
-   tmp2o = i0p12   - in[4+1]*0.34729635533386f - in[8+1]*1.8793852415718f      + in[16+1]*1.532088886238f;
-   tmp3o = i0p12   - in[4+1]*1.532088886238f   + in[8+1]*0.34729635533386f     - in[16+1]*1.8793852415718f;
-   tmp4o = (in[0+1] - in[4+1]                   + in[8+1] - in[12+1]            + in[16+1])*0.707106781f; /* Twiddled */
+   tmp2o = i0p12   - in[4+1]*0.34729635533386F - in[8+1]*1.8793852415718F      + in[16+1]*1.532088886238F;
+   tmp3o = i0p12   - in[4+1]*1.532088886238F   + in[8+1]*0.34729635533386F     - in[16+1]*1.8793852415718F;
+   tmp4o = (in[0+1] - in[4+1]                   + in[8+1] - in[12+1]            + in[16+1])*0.707106781F; /* Twiddled */
    }
    {
    /* 4 points on even indices */
-   float i6_ = in[6+1]*1.732050808f;		/* Sqrt[3] */
+   float i6_ = in[6+1]*1.732050808F;		/* Sqrt[3] */
 
-   tmp0_o = in[2+1]*1.9696155060244f  + i6_ + in[10+1]*1.2855752193731f  + in[14+1]*0.68404028665134f;
-   tmp1_o = (in[2+1]                        - in[10+1]                   - in[14+1])*1.732050808f;
-   tmp2_o = in[2+1]*1.2855752193731f  - i6_ - in[10+1]*0.68404028665134f + in[14+1]*1.9696155060244f;
-   tmp3_o = in[2+1]*0.68404028665134f - i6_ + in[10+1]*1.9696155060244f  - in[14+1]*1.2855752193731f;
+   tmp0_o = in[2+1]*1.9696155060244F  + i6_ + in[10+1]*1.2855752193731F  + in[14+1]*0.68404028665134F;
+   tmp1_o = (in[2+1]                        - in[10+1]                   - in[14+1])*1.732050808F;
+   tmp2_o = in[2+1]*1.2855752193731F  - i6_ - in[10+1]*0.68404028665134F + in[14+1]*1.9696155060244F;
+   tmp3_o = in[2+1]*0.68404028665134F - i6_ + in[10+1]*1.9696155060244F  - in[14+1]*1.2855752193731F;
    }
 
    /* Twiddle factors on odd indices
@@ -302,15 +302,15 @@ void imdct(int win_type,int sb,int ch)
    */
    {
    float e, o;
-   e = tmp0 + tmp0_; o = (tmp0o + tmp0_o)*0.501909918f; tmp[0] = (e + o)*(-0.500476342f*.5f);    tmp[17] = (e - o)*(-11.46279281f*.5f);
-   e = tmp1 + tmp1_; o = (tmp1o + tmp1_o)*0.517638090f; tmp[1] = (e + o)*(-0.504314480f*.5f);    tmp[16] = (e - o)*(-3.830648788f*.5f);
-   e = tmp2 + tmp2_; o = (tmp2o + tmp2_o)*0.551688959f; tmp[2] = (e + o)*(-0.512139757f*.5f);    tmp[15] = (e - o)*(-2.310113158f*.5f);
-   e = tmp3 + tmp3_; o = (tmp3o + tmp3_o)*0.610387294f; tmp[3] = (e + o)*(-0.524264562f*.5f);    tmp[14] = (e - o)*(-1.662754762f*.5f);
-                                                        tmp[4] = (tmp4 + tmp4o)*(-0.541196100f); tmp[13] = (tmp4 - tmp4o)*(-1.306562965f);
-   e = tmp3 - tmp3_; o = (tmp3o - tmp3_o)*0.871723397f; tmp[5] = (e + o)*(-0.563690973f*.5f);    tmp[12] = (e - o)*(-1.082840285f*.5f);
-   e = tmp2 - tmp2_; o = (tmp2o - tmp2_o)*1.183100792f; tmp[6] = (e + o)*(-0.592844523f*.5f);    tmp[11] = (e - o)*(-0.930579498f*.5f);
-   e = tmp1 - tmp1_; o = (tmp1o - tmp1_o)*1.931851653f; tmp[7] = (e + o)*(-0.630236207f*.5f);    tmp[10] = (e - o)*(-0.821339815f*.5f);
-   e = tmp0 - tmp0_; o = (tmp0o - tmp0_o)*5.736856623f; tmp[8] = (e + o)*(-0.678170852f*.5f);    tmp[9] =  (e - o)*(-0.740093616f*.5f);
+   e = tmp0 + tmp0_; o = (tmp0o + tmp0_o)*0.501909918F; tmp[0] = (e + o)*(-0.500476342F*.5F);    tmp[17] = (e - o)*(-11.46279281F*.5F);
+   e = tmp1 + tmp1_; o = (tmp1o + tmp1_o)*0.517638090F; tmp[1] = (e + o)*(-0.504314480F*.5F);    tmp[16] = (e - o)*(-3.830648788F*.5F);
+   e = tmp2 + tmp2_; o = (tmp2o + tmp2_o)*0.551688959F; tmp[2] = (e + o)*(-0.512139757F*.5F);    tmp[15] = (e - o)*(-2.310113158F*.5F);
+   e = tmp3 + tmp3_; o = (tmp3o + tmp3_o)*0.610387294F; tmp[3] = (e + o)*(-0.524264562F*.5F);    tmp[14] = (e - o)*(-1.662754762F*.5F);
+                                                        tmp[4] = (tmp4 + tmp4o)*(-0.541196100F); tmp[13] = (tmp4 - tmp4o)*(-1.306562965F);
+   e = tmp3 - tmp3_; o = (tmp3o - tmp3_o)*0.871723397F; tmp[5] = (e + o)*(-0.563690973F*.5F);    tmp[12] = (e - o)*(-1.082840285F*.5F);
+   e = tmp2 - tmp2_; o = (tmp2o - tmp2_o)*1.183100792F; tmp[6] = (e + o)*(-0.592844523F*.5F);    tmp[11] = (e - o)*(-0.930579498F*.5F);
+   e = tmp1 - tmp1_; o = (tmp1o - tmp1_o)*1.931851653F; tmp[7] = (e + o)*(-0.630236207F*.5F);    tmp[10] = (e - o)*(-0.821339815F*.5F);
+   e = tmp0 - tmp0_; o = (tmp0o - tmp0_o)*5.736856623F; tmp[8] = (e + o)*(-0.678170852F*.5F);    tmp[9] =  (e - o)*(-0.740093616F*.5F);
    }
    }
 	/* shift to modified IDCT */
@@ -392,7 +392,7 @@ int start = u_start[ch];
 int div = u_div[ch];
 float (*u_p)[16];
 
-#if defined(PENTIUM_RDTSC)
+#ifdef PENTIUM_RDTSC
 unsigned int cnt4, cnt3, cnt2, cnt1;
 static int min_cycles = 99999999;
 
@@ -626,14 +626,14 @@ static int min_cycles = 99999999;
 	}
 	}
 
-#if defined(PENTIUM_RDTSC)
+#ifdef PENTIUM_RDTSC
 	__asm__(".byte 0x0f,0x31" : "=a" (cnt3), "=d" (cnt4));
 #endif
 
 	/* we're doing dewindowing and calculating final samples now
 	 */
 
-#if defined(ARCH_i586)
+#ifdef ARCH_i586
 	/* x86 assembler optimisations.  These optimisations are tuned
            specifically for Intel Pentiums. */
 
@@ -994,7 +994,7 @@ static int min_cycles = 99999999;
 					\
 		samples += nch;
 
-#if defined(SUPERHACK)
+#ifdef SUPERHACK
 	  /* These is a simple implementation which should be nicer to the
              cache; computation of samples are done in one pass rather than
              two.  However, for various reasons which I do not have time to
@@ -1498,7 +1498,7 @@ static int min_cycles = 99999999;
 	u_start[ch] &= 0xf;
 	u_div[ch]=u_div[ch] ? 0 : 1;
 
-#if defined(PENTIUM_RDTSC)
+#ifdef PENTIUM_RDTSC
 	__asm__(".byte 0x0f,0x31" : "=a" (cnt2), "=d" (cnt4));
 			
 	if (cnt2-cnt1 < min_cycles) {
@@ -1514,5 +1514,5 @@ void premultiply()
 
   for (i = 0; i < 17; ++i)
     for (t = 0; t < 32; ++t)
-      t_dewindow[i][t] *= 16383.5f;
+      t_dewindow[i][t] *= 16383.5F;
 }

@@ -31,7 +31,7 @@
 	#endif
 #endif
 
-double ym2151_hack = 1.0f;
+double ym2151_hack = 1.0F;
 static int ym2151_comptab = 0;
 
 /* struct describing a single operator */
@@ -2492,12 +2492,18 @@ void YM2151UpdateOne(int num, INT16 **buffers, int length)
 
 		outl >>= FINAL_SH;
 		outr >>= FINAL_SH;
-		if (outl > MAXOUT) outl = MAXOUT;
-			else if (outl < MINOUT) outl = MINOUT;
-		if (outr > MAXOUT) outr = MAXOUT;
-			else if (outr < MINOUT) outr = MINOUT;
-		((SAMP*)bufL)[i] = (SAMP)outl;
-		((SAMP*)bufR)[i] = (SAMP)outr;
+		if (outl > MAXOUT) {
+			outl = MAXOUT;
+		} else if (outl < MINOUT) {
+			outl = MINOUT;
+		}
+		if (outr > MAXOUT) {
+			outr = MAXOUT;
+		} else if (outr < MINOUT) {
+			outr = MINOUT;
+		}
+		bufL[i] = (SAMP)outl;
+		bufR[i] = (SAMP)outr;
 
 		SAVE_ALL_CHANNELS
 

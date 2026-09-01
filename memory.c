@@ -733,7 +733,6 @@ void memory_write8(offs_t address, data8_t data)
 	}
 
 	logerror("Unmapped write8 %x at %x\n", data, (int)address);
-	return;
 }
 
 void memory_writeport8(offs_t port, data8_t data)
@@ -788,7 +787,6 @@ void memory_writeport8(offs_t port, data8_t data)
 	}
 
 	logerror("Unmapped writeport8 %x at %x\n", data, (int)address);
-	return;
 }
 
 

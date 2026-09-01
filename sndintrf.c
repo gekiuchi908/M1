@@ -34,7 +34,7 @@ int custom_sh_start(const struct MachineSound *msound)
 
 	if (cust_intf->sh_start)
 		return (*cust_intf->sh_start)(msound);
-	else return 0;
+	return 0;
 }
 void custom_sh_stop(void)
 {
@@ -1029,7 +1029,6 @@ const char *sound_name(const struct MachineSound *msound)
 {
 	if (msound->sound_type < SOUND_COUNT)
 		return sndintf[msound->sound_type].name;
-	else
-		return "";
+	return "";
 }
 

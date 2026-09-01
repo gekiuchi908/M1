@@ -61,7 +61,10 @@ static void TimerHandler(int n,int c,int count,double stepTime)
 /* update request from fm.c */
 void YM2151UpdateRequest(int chip)
 {
-	stream_update(stream[chip],0);
+	if (chip >= 0 && chip < MAX_2151)
+	{
+		stream_update(stream[chip],0);
+	}
 }
 
 static int my_YM2151_sh_start(const struct MachineSound *msound,int mode)

@@ -393,6 +393,11 @@ int BSMT2000_sh_start(const struct MachineSound *msound)
 	int vol[2];
 	int i;
 	
+	if (intf->num > MAX_BSMT2000)
+	{
+		return 1;
+	}
+
 	/* initialize the chips */
 	memset(&bsmt2000, 0, sizeof(bsmt2000));
 	for (i = 0; i < intf->num; i++)

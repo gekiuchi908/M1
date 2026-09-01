@@ -601,21 +601,24 @@ void m68k_set_reg(m68k_register_t regnum, unsigned int value)
 		case M68K_REG_PC:	m68ki_jump(MASK_OUT_ABOVE_32(value)); return;
 		case M68K_REG_SR:	m68ki_set_sr(value); return;
 		case M68K_REG_SP:	REG_SP = MASK_OUT_ABOVE_32(value); return;
-		case M68K_REG_USP:	if(FLAG_S)
-								REG_USP = MASK_OUT_ABOVE_32(value);
-							else
-								REG_SP = MASK_OUT_ABOVE_32(value);
-							return;
-		case M68K_REG_ISP:	if(FLAG_S && !FLAG_M)
-								REG_SP = MASK_OUT_ABOVE_32(value);
-							else
-								REG_ISP = MASK_OUT_ABOVE_32(value);
-							return;
-		case M68K_REG_MSP:	if(FLAG_S && FLAG_M)
-								REG_SP = MASK_OUT_ABOVE_32(value);
-							else
-								REG_MSP = MASK_OUT_ABOVE_32(value);
-							return;
+		case M68K_REG_USP:
+			if(FLAG_S)
+				REG_USP = MASK_OUT_ABOVE_32(value);
+			else
+				REG_SP = MASK_OUT_ABOVE_32(value);
+			return;
+		case M68K_REG_ISP:
+			if(FLAG_S && !FLAG_M)
+				REG_SP = MASK_OUT_ABOVE_32(value);
+			else
+				REG_ISP = MASK_OUT_ABOVE_32(value);
+			return;
+		case M68K_REG_MSP:
+			if(FLAG_S && FLAG_M)
+				REG_SP = MASK_OUT_ABOVE_32(value);
+			else
+				REG_MSP = MASK_OUT_ABOVE_32(value);
+			return;
 		case M68K_REG_VBR:	REG_VBR = MASK_OUT_ABOVE_32(value); return;
 		case M68K_REG_SFC:	REG_SFC = value & 7; return;
 		case M68K_REG_DFC:	REG_DFC = value & 7; return;

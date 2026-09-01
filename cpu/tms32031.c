@@ -342,8 +342,8 @@ void tms32031_set_irq_line(int irqline, int state)
 {
 	if (irqline < 11)
 	{
-	    /* update the state */
-	    if (state == ASSERT_LINE)
+		/* update the state */
+		if (state == ASSERT_LINE)
 			IREG(TMR_IF) |= 1 << irqline;
 		else
 			IREG(TMR_IF) &= ~(1 << irqline);

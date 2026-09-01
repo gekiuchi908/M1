@@ -486,9 +486,9 @@ INLINE int calculate_slot_volume(YMF271Slot *slot)
 		case 3: lfo_volume = 65536 - (((UINT64)slot->lfo_amplitude * 4277) >> 16); break;	// 23.625dB
 	}
 
-	env_volume = ((UINT64)env_volume_table[255 - (slot->volume >> ENV_VOLUME_SHIFT)] * (UINT64)lfo_volume) >> 16;
+	env_volume = ((UINT64)env_volume_table[255 - (slot->volume >> ENV_VOLUME_SHIFT)] * lfo_volume) >> 16;
 
-	volume = ((UINT64)env_volume * (UINT64)total_level[slot->tl]) >> 16;
+	volume = (env_volume * (UINT64)total_level[slot->tl]) >> 16;
 		  
 	return volume;
 }

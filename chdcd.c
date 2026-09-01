@@ -21,14 +21,14 @@
 ***************************************************************************/
 
 #define EATWHITESPACE	\
-	while ((linebuffer[i] == ' ' || linebuffer[i] == 0x09 || linebuffer[i] == '\r') && (i < 512))	\
+	while ((i < 512) && (linebuffer[i] == ' ' || linebuffer[i] == 0x09 || linebuffer[i] == '\r'))	\
 	{	\
 		i++;	\
 	}
 
 #define TOKENIZE	\
 	j = 0; \
-	while (!isspace(linebuffer[i]) && (i < 512) && (j < 128))	\
+	while ((i < 512) && (j < 127) && !isspace((unsigned char)linebuffer[i]))	\
 	{	\
 		token[j] = linebuffer[i];	\
 		i++;	\
@@ -38,7 +38,7 @@
 
 #define TOKENIZETOCOLON	\
 	j = 0; \
-	while ((linebuffer[i] != ':') && (i < 512) && (j < 128))	\
+	while ((i < 512) && (j < 127) && (linebuffer[i] != ':'))	\
 	{	\
 		token[j] = linebuffer[i];	\
 		i++;	\
@@ -97,12 +97,25 @@ int cdrom_parse_toc(char *tocfname, struct cdrom_toc *outtoc, struct cdrom_track
 		
 			if ((!strcmp(token, "DATAFILE")) || (!strcmp(token, "FILE")))
 			{
+				if (trknum < 0 || trknum >= CD_MAX_TRACKS)
+				{
+					continue;
+				}
 				/* found the data file for a track */
 				EATWHITESPACE
 				TOKENIZE
 
 				/* keep the filename */
-				strncpy(&outinfo->fname[trknum][0], &token[1], strlen(&token[1])-1);
+				if (strlen(token) > 1)
+				{
+					size_t len = strlen(&token[1]) - 1;
+					if (len >= sizeof(outinfo->fname[trknum]))
+					{
+						len = sizeof(outinfo->fname[trknum]) - 1;
+					}
+					memcpy(&outinfo->fname[trknum][0], &token[1], len);
+					outinfo->fname[trknum][len] = '\0';
+				}
 
 				/* get either the offset or the length */
 				EATWHITESPACE
@@ -148,7 +161,7 @@ int cdrom_parse_toc(char *tocfname, struct cdrom_toc *outtoc, struct cdrom_track
 				if (!foundcolon)
 				{
 					// rewind to the start of the real MSF
-					while (linebuffer[i] != ' ')
+					while ((i > 0) && (linebuffer[i] != ' '))
 					{
 						i--;
 					}
@@ -202,6 +215,10 @@ int cdrom_parse_toc(char *tocfname, struct cdrom_toc *outtoc, struct cdrom_track
 			{
 				/* found a new track */
 				trknum++;
+				if (trknum >= CD_MAX_TRACKS)
+				{
+					break;
+				}
 
 				/* next token on the line is the track type */
 				EATWHITESPACE

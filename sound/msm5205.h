@@ -37,7 +37,7 @@ void MSM5205_data_w (int num, int data);
 /* VCLK slave mode option                                        */
 /* if VCLK and reset or data is changed at the same time,        */
 /* Call MSM5205_vclk_w after MSM5205_data_w and MSM5205_reset_w. */
-void MSM5205_vclk_w (int num, int reset);
+void MSM5205_vclk_w (int num, int vclk);
 /* option , selected pin seletor */
 void MSM5205_playmode_w(int num,int _select);
 

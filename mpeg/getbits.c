@@ -327,7 +327,6 @@ int nch;
 			info->scalefac_scale[gr][ch]=_getbits(1);
 			info->count1table_select[gr][ch]=_getbits(1);
 		}
-	return;
 }
 
 int dummy_getinfo(int n)
@@ -336,7 +335,7 @@ int dummy_getinfo(int n)
         if ( m1fseek(in_file,n,SEEK_CUR) != 0)
 	{
                 if (m1feof(in_file)) return GETHDR_EOF;
-                else return GETHDR_ERR;
+                return GETHDR_ERR;
 	}
 	return 0;
 }
@@ -360,7 +359,7 @@ static inline int get_input(unsigned char* bp, unsigned int size)
 	if ( m1fread( bp , 1, size, in_file) != size) 
 	{
                 if (m1feof(in_file)) return GETHDR_EOF;
-                else return GETHDR_ERR;
+                return GETHDR_ERR;
 	}
 	return 0;
 #endif /* LINUX_REALTIME */

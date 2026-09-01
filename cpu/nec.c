@@ -167,7 +167,7 @@ void nec_reset (void *param)
     for (i = 0xc0; i < 0x100; i++)
     {
 		Mod_RM.RM.w[i] = (WREGS)( i & 7 );
-		Mod_RM.RM.b[i] = (BREGS)reg_name[i & 7];
+		Mod_RM.RM.b[i] = reg_name[i & 7];
     }
 }
 
@@ -860,7 +860,7 @@ OP( 0xf7, i_f7pre   ) { UINT32 tmp,tmp2; UINT32 uresult,uresult2; INT32 result,r
 		case 0x08: logerror("%06x: Undefined opcode 0xf7 0x08\n",activecpu_get_pc()); break;
  		case 0x10: PutbackRMWord(ModRM,~tmp); nec_ICount-=(ModRM >=0xc0 )?2:16; break; /* NOT */
 		case 0x18: I.CarryVal=(tmp!=0); tmp=(~tmp)+1; SetSZPF_Word(tmp); PutbackRMWord(ModRM,tmp&0xffff); nec_ICount-=(ModRM >=0xc0 )?2:16; break; /* NEG */
-		case 0x20: uresult = I.regs.w[AW]*tmp; I.regs.w[AW]=uresult&0xffff; I.regs.w[DW]=((UINT32)uresult)>>16; I.CarryVal=I.OverVal=(I.regs.w[DW]!=0); nec_ICount-=(ModRM >=0xc0 )?30:36; break; /* MULU */
+		case 0x20: uresult = I.regs.w[AW]*tmp; I.regs.w[AW]=uresult&0xffff; I.regs.w[DW]=uresult>>16; I.CarryVal=I.OverVal=(I.regs.w[DW]!=0); nec_ICount-=(ModRM >=0xc0 )?30:36; break; /* MULU */
 		case 0x28: result = (INT32)((INT16)I.regs.w[AW])*(INT32)((INT16)tmp); I.regs.w[AW]=result&0xffff; I.regs.w[DW]=result>>16; I.CarryVal=I.OverVal=(I.regs.w[DW]!=0); nec_ICount-=(ModRM >=0xc0 )?30:36; break; /* MUL */
 		case 0x30: if (tmp) { DIVUW; } else nec_interrupt(0,0); nec_ICount-=(ModRM >=0xc0 )?43:53; break;
 		case 0x38: if (tmp) { DIVW;  } else nec_interrupt(0,0); nec_ICount-=(ModRM >=0xc0 )?43:53; break;
