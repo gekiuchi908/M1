@@ -27,7 +27,11 @@
 #include "transform.h"
 
 #ifndef __BEOS__
-typedef int bool;
+  #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+    // C23以降はboolが標準キーワード化されたため、独自定義はしない
+  #else
+    typedef int bool;
+  #endif
 #endif
 
 #include "m1snd.h"
