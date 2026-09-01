@@ -4,7 +4,7 @@
 
 CC   = gcc
 CPP  = g++
-CFLAGS = -c -O3 -g3 -fno-strict-aliasing -fPIC
+CFLAGS = -c -O3 -g3 -fno-strict-aliasing -fPIC -Wno-unused-but-set-variable
 CFLAGS += -DSOUND_OUTPUT=1 -DHAS_YM2612=1 -DHAS_YM3438=1 -DHAS_YM2203=1 -DHAS_YM2610=1 -DHAS_YM2610B=1 -DINLINE="static __inline__"
 CFLAGS += -DHAS_YM3812=1 -DHAS_YM3526=1 -DHAS_M65C02=1 -DLSB_FIRST=1 -DHAS_M6803=1 -DHAS_M6808=1 -DHAS_ADSP2105=1
 CFLAGS += -DHAS_ES5505=1 -DHAS_ES5506=1 -DHAS_K005289=1 -DHAS_SN76496=1 -DHAS_K007232=1 -DHAS_NAMCO=1
@@ -38,8 +38,9 @@ OBJS += mpeg/layer3.o mpeg/misc2.o mpeg/position.o mpeg/transform.o mpeg/util.o 
 
 # Zlib objects (avoids dynamic link, allowing use with .NET / Mono)
 
-OBJS += zlib/adler32.o zlib/compress.o zlib/crc32.o zlib/gzio.o zlib/uncompr.o zlib/deflate.o zlib/trees.o
-OBJS += zlib/zutil.o zlib/inflate.o zlib/infback.o zlib/inftrees.o zlib/inffast.o
+OBJS += zlib/adler32.o zlib/deflate.o zlib/gzwrite.o zlib/inflate.o zlib/trees.o zlib/compress.o
+OBJS += zlib/gzlib.o zlib/infback.o zlib/inftrees.o zlib/uncompr.o zlib/crc32.o zlib/gzclose.o
+OBJS += zlib/gzread.o zlib/inffast.o zlib/zutil.o
 
 # Expat XML parser lib objects
 
@@ -143,8 +144,8 @@ clean:
 check:
 	@mkdir -p check-results
 	@for src in $(SRCS); do \
-		filename=$$(basename "$src"); \
+		filename=$$(basename "$$src"); \
 		echo "--- Checking $filename" > check-results/"$$filename.txt"; \
-		clang-tidy "$src" >> check-results/"$$filename.txt"; \
+		clang-tidy "$$src" >> check-results/"$$filename.txt"; \
 	done
 
