@@ -104,6 +104,20 @@ static void timer_callback(int param)
 	}
 }
 
+static void update_68681_timer(void)
+{
+	int count = (counter == 0) ? 65536 : counter;
+	if (timer_68681) timer_remove(timer_68681);
+	if (timer_mode == TIMER_SINGLESHOT)
+	{
+		timer_68681 = timer_set(TIME_IN_CYCLES(((double)M68K_CLOCK / M68681_CLOCK) * count * 16, 1), 0, timer_callback);
+	}
+	else if (timer_mode == TIMER_PULSE)
+	{
+		timer_68681 = timer_pulse(TIME_IN_CYCLES(((double)M68K_CLOCK / M68681_CLOCK) * count, 1), 0, timer_callback);
+	}
+}
+
 static READ16_HANDLER(f3_68681_r)
 {
 	if (offset==0x5) {
@@ -113,8 +127,11 @@ static READ16_HANDLER(f3_68681_r)
 		return ret;
 	}
 
-	if (offset==0xe)
+	/* Start counter command */
+	if (offset==0xe) {
+		update_68681_timer();
 		return 1;
+	}
 
 	/* IRQ ack */
 	if (offset==0xf) {
@@ -144,9 +161,8 @@ static WRITE16_HANDLER(f3_68681_w)
 					break;
 				case 3:
 //					logerror("Counter:  X1/Clk - divided by 16, counter is %04x, so interrupt every %d cycles\n",counter,(M68K_CLOCK/M68681_CLOCK)*counter*16);
-					if (timer_68681) timer_remove(timer_68681);
 					timer_mode=TIMER_SINGLESHOT;
-					timer_68681=timer_set(TIME_IN_CYCLES((M68K_CLOCK/M68681_CLOCK)*counter*16,1), 0, timer_callback);
+					update_68681_timer();
 					break;
 				case 4:
 //					logerror("Timer:  Unimplemented external IP2\n");
@@ -156,9 +172,8 @@ static WRITE16_HANDLER(f3_68681_w)
 					break;
 				case 6:
 //					logerror("Timer:  X1/Clk, counter is %04x, so interrupt every %d cycles\n",counter,(M68K_CLOCK/M68681_CLOCK)*counter);
-					if (timer_68681) timer_remove(timer_68681);
 					timer_mode=TIMER_PULSE;
-					timer_68681=timer_pulse(TIME_IN_CYCLES((M68K_CLOCK/M68681_CLOCK)*counter,1), 0, timer_callback);
+					update_68681_timer();
 					break;
 				case 7:
 //					logerror("Timer:  Unimplemented X1/Clk - divided by 16\n");
@@ -173,9 +188,11 @@ static WRITE16_HANDLER(f3_68681_w)
 
 		case 0x06: /* CTUR */
 			counter=((data&0xff)<<8)|(counter&0xff);
+			if (timer_68681) update_68681_timer();
 			break;
 		case 0x07: /* CTLR */
 			counter=(counter&0xff00)|(data&0xff);
+			if (timer_68681) update_68681_timer();
 			break;
 		case 0x08: break; /* MR1B (Mode register B) */
 		case 0x09: break; /* CSRB (Clock select register B) */
@@ -227,9 +244,9 @@ WRITE16_HANDLER(es5510_dsp_w)
 	COMBINE_DATA(&es5510_dsp_ram[offset]);
 
 	switch (offset) {
-		case 0x00: es5510_gpr_latch=(es5510_gpr_latch&0x00ffff)|((data&0xff)<<16);
-		case 0x01: es5510_gpr_latch=(es5510_gpr_latch&0xff00ff)|((data&0xff)<< 8);
-		case 0x02: es5510_gpr_latch=(es5510_gpr_latch&0xffff00)|((data&0xff)<< 0);
+		case 0x00: es5510_gpr_latch=(es5510_gpr_latch&0x00ffff)|((data&0xff)<<16); break;
+		case 0x01: es5510_gpr_latch=(es5510_gpr_latch&0xff00ff)|((data&0xff)<< 8); break;
+		case 0x02: es5510_gpr_latch=(es5510_gpr_latch&0xffff00)|((data&0xff)<< 0); break;
 		case 0x03: break;
 
 		case 0x80: /* Read select - GPR + INSTR */
@@ -514,6 +531,13 @@ static void F3_Init(long srate)
 
 	memset(bExtCodeBuf, 0, sizeof(bExtCodeBuf));
 	lastcode = 0;
+
+	if (timer_68681) { timer_remove(timer_68681); timer_68681 = NULL; }
+	timer_mode = TIMER_PULSE;
+	m68681_imr = 0;
+	counter = 0;
+	imr_status = 0;
+	vector_reg = 0;
 
 	memset(commram, 0, 0x1000);
 	commram[0x7f8] = 0x30;

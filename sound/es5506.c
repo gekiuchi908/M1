@@ -244,15 +244,15 @@ static int compute_tables(void)
 ***********************************************************************************************/
 
 #define interpolate(sample1, sample2, accum)										\
-		(sample1 * (INT32)(0x800 - (voice->accum & 0x7ff)) + 						\
-		 sample2 * (INT32)(voice->accum & 0x7ff)) >> 11;
+		(((sample1) * (INT32)(0x800 - ((accum) & 0x7ff)) + 						\
+		  (sample2) * (INT32)((accum) & 0x7ff)) >> 11)
 
 #if BACKEND_INTERPOLATE
 #define backend_interpolate(sample1, sample2, position)								\
-		(sample1 * (INT32)(FRAC_ONE - position) + 									\
-		 sample2 * (INT32)position) >> FRAC_BITS;
+		(((sample1) * (INT32)(FRAC_ONE - (position)) + 								\
+		  (sample2) * (INT32)(position)) >> FRAC_BITS)
 #else
-#define backend_interpolate(sample1, sample2, position)	sample1
+#define backend_interpolate(sample1, sample2, position)	(sample1)
 #endif
 
 
@@ -335,45 +335,48 @@ do																								\
 #define update_envelopes(voice, samples)											\
 do																					\
 {																					\
-	int count = (samples > 1 && samples > voice->ecount) ? voice->ecount : samples;	\
+	if (accum_mask == 0x7fffffff) break; /* ES5505 has no hardware envelopes */		\
+	if ((voice)->ecount == 0) break;												\
+	int count = ((samples) > (voice)->ecount) ? (voice)->ecount : (samples);		\
+	if (count <= 0) break;															\
 																					\
 	/* decrement the envelope counter */											\
-	voice->ecount -= count;															\
+	(voice)->ecount -= count;														\
 																					\
 	/* ramp left volume */															\
-	if (voice->lvramp)																\
+	if ((voice)->lvramp)															\
 	{																				\
-		voice->lvol += (INT8)voice->lvramp * count;									\
-		if ((INT32)voice->lvol < 0) voice->lvol = 0;								\
-		else if (voice->lvol > 0xffff) voice->lvol = 0xffff;						\
+		(voice)->lvol += (INT8)(voice)->lvramp * count;								\
+		if ((INT32)(voice)->lvol < 0) (voice)->lvol = 0;							\
+		else if ((voice)->lvol > 0xffff) (voice)->lvol = 0xffff;					\
 	}																				\
 																					\
 	/* ramp right volume */															\
-	if (voice->rvramp)																\
+	if ((voice)->rvramp)															\
 	{																				\
-		voice->rvol += (INT8)voice->rvramp * count;									\
-		if ((INT32)voice->rvol < 0) voice->rvol = 0;								\
-		else if (voice->rvol > 0xffff) voice->rvol = 0xffff;						\
+		(voice)->rvol += (INT8)(voice)->rvramp * count;								\
+		if ((INT32)(voice)->rvol < 0) (voice)->rvol = 0;							\
+		else if ((voice)->rvol > 0xffff) (voice)->rvol = 0xffff;					\
 	}																				\
 																					\
 	/* ramp k1 filter constant */													\
-	if (voice->k1ramp && ((INT32)voice->k1ramp >= 0 || !(voice->filtcount & 7)))	\
+	if ((voice)->k1ramp && ((INT32)(voice)->k1ramp >= 0 || !((voice)->filtcount & 7))) \
 	{																				\
-		voice->k1 += (INT8)voice->k1ramp * count;									\
-		if ((INT32)voice->k1 < 0) voice->k1 = 0;									\
-		else if (voice->k1 > 0xffff) voice->k1 = 0xffff;							\
+		(voice)->k1 += (INT8)(voice)->k1ramp * count;								\
+		if ((INT32)(voice)->k1 < 0) (voice)->k1 = 0;								\
+		else if ((voice)->k1 > 0xffff) (voice)->k1 = 0xffff;						\
 	}																				\
 																					\
 	/* ramp k2 filter constant */													\
-	if (voice->k2ramp && ((INT32)voice->k2ramp >= 0 || !(voice->filtcount & 7)))	\
+	if ((voice)->k2ramp && ((INT32)(voice)->k2ramp >= 0 || !((voice)->filtcount & 7))) \
 	{																				\
-		voice->k2 += (INT8)voice->k2ramp * count;									\
-		if ((INT32)voice->k2 < 0) voice->k2 = 0;									\
-		else if (voice->k2 > 0xffff) voice->k2 = 0xffff;							\
+		(voice)->k2 += (INT8)(voice)->k2ramp * count;								\
+		if ((INT32)(voice)->k2 < 0) (voice)->k2 = 0;								\
+		else if ((voice)->k2 > 0xffff) (voice)->k2 = 0xffff;						\
 	}																				\
 																					\
 	/* update the filter constant counter */										\
-	voice->filtcount += count;														\
+	(voice)->filtcount += count;													\
 																					\
 } while (0)
 
@@ -390,36 +393,60 @@ do																					\
 do																					\
 {																					\
 	/* are we past the end? */														\
-	if (accum > voice->end && !(voice->control & CONTROL_LEI))						\
+	if (accum > (voice)->end && !((voice)->control & CONTROL_LEI))					\
 	{																				\
 		/* generate interrupt if required */										\
-		if (voice->control&CONTROL_IRQE)											\
-			voice->control |= CONTROL_IRQ;											\
+		if ((voice)->control & CONTROL_IRQE)										\
+			(voice)->control |= CONTROL_IRQ;										\
 																					\
 		/* handle the different types of looping */									\
-		switch (voice->control & CONTROL_LOOPMASK)									\
+		if (accum_mask == 0x7fffffff)												\
 		{																			\
-			/* non-looping */														\
-			case 0:																	\
-				voice->control |= CONTROL_STOP0;									\
-				goto alldone;														\
+			/* ES5505: BLE is ignored when LPE = 0 */								\
+			switch ((voice)->control & CONTROL_LOOPMASK)							\
+			{																		\
+				case 0:																\
+				case CONTROL_BLE:													\
+					(voice)->control |= CONTROL_STOP0;								\
+					goto alldone;													\
 																					\
-			/* uni-directional looping */											\
-			case CONTROL_LPE:														\
-				accum = (voice->start + (accum - voice->end)) & accum_mask;			\
-				break;																\
+				case CONTROL_LPE:													\
+					accum = ((voice)->start + (accum - (voice)->end)) & accum_mask;	\
+					break;															\
 																					\
-			/* trans-wave looping */												\
-			case CONTROL_BLE:														\
-				accum = (voice->start + (accum - voice->end)) & accum_mask;			\
-				voice->control = (voice->control & ~CONTROL_LOOPMASK) | CONTROL_LEI;\
-				break;																\
+				case CONTROL_LPE | CONTROL_BLE:										\
+					accum = ((voice)->end - (accum - (voice)->end)) & accum_mask;	\
+					(voice)->control ^= CONTROL_DIR;								\
+					goto reverse;													\
+			}																		\
+		}																			\
+		else																		\
+		{																			\
+			/* ES5506 */															\
+			switch ((voice)->control & CONTROL_LOOPMASK)							\
+			{																		\
+				/* non-looping */													\
+				case 0:																\
+					(voice)->control |= CONTROL_STOP0;								\
+					goto alldone;													\
 																					\
-			/* bi-directional looping */											\
-			case CONTROL_LPE | CONTROL_BLE:											\
-				accum = (voice->end - (accum - voice->end)) & accum_mask;			\
-				voice->control ^= CONTROL_DIR;										\
-				goto reverse;														\
+				/* uni-directional looping */										\
+				case CONTROL_LPE:													\
+					accum = ((voice)->start + (accum - (voice)->end)) & accum_mask;	\
+					break;															\
+																					\
+				/* trans-wave looping */											\
+				case CONTROL_BLE:													\
+					accum = ((voice)->start + (accum - (voice)->end)) & accum_mask;	\
+					(voice)->control = ((voice)->control & ~CONTROL_LOOPMASK) | CONTROL_LEI;\
+					break;															\
+																					\
+				/* bi-directional looping */										\
+				case CONTROL_LPE | CONTROL_BLE:										\
+					accum = ((voice)->end - (accum - (voice)->end)) & accum_mask;	\
+					(voice)->control ^= CONTROL_DIR;								\
+					goto reverse;													\
+			}																		\
 		}																			\
 	}																				\
 } while (0)
@@ -429,36 +456,60 @@ do																					\
 do																					\
 {																					\
 	/* are we past the end? */														\
-	if (accum < voice->start && !(voice->control & CONTROL_LEI))					\
+	if (accum < (voice)->start && !((voice)->control & CONTROL_LEI))				\
 	{																				\
 		/* generate interrupt if required */										\
-		if (voice->control&CONTROL_IRQE)											\
-			voice->control |= CONTROL_IRQ;											\
+		if ((voice)->control & CONTROL_IRQE)										\
+			(voice)->control |= CONTROL_IRQ;										\
 																					\
 		/* handle the different types of looping */									\
-		switch (voice->control & CONTROL_LOOPMASK)									\
+		if (accum_mask == 0x7fffffff)												\
 		{																			\
-			/* non-looping */														\
-			case 0:																	\
-				voice->control |= CONTROL_STOP0;									\
-				goto alldone;														\
+			/* ES5505: BLE is ignored when LPE = 0 */								\
+			switch ((voice)->control & CONTROL_LOOPMASK)							\
+			{																		\
+				case 0:																\
+				case CONTROL_BLE:													\
+					(voice)->control |= CONTROL_STOP0;								\
+					goto alldone;													\
 																					\
-			/* uni-directional looping */											\
-			case CONTROL_LPE:														\
-				accum = (voice->end - (voice->start - accum)) & accum_mask;			\
-				break;																\
+				case CONTROL_LPE:													\
+					accum = ((voice)->end - ((voice)->start - accum)) & accum_mask;	\
+					break;															\
 																					\
-			/* trans-wave looping */												\
-			case CONTROL_BLE:														\
-				accum = (voice->end - (voice->start - accum)) & accum_mask;			\
-				voice->control = (voice->control & ~CONTROL_LOOPMASK) | CONTROL_LEI;\
-				break;																\
+				case CONTROL_LPE | CONTROL_BLE:										\
+					accum = ((voice)->start + ((voice)->start - accum)) & accum_mask;\
+					(voice)->control ^= CONTROL_DIR;								\
+					goto reverse;													\
+			}																		\
+		}																			\
+		else																		\
+		{																			\
+			/* ES5506 */															\
+			switch ((voice)->control & CONTROL_LOOPMASK)							\
+			{																		\
+				/* non-looping */													\
+				case 0:																\
+					(voice)->control |= CONTROL_STOP0;								\
+					goto alldone;													\
 																					\
-			/* bi-directional looping */											\
-			case CONTROL_LPE | CONTROL_BLE:											\
-				accum = (voice->start + (voice->start - accum)) & accum_mask;		\
-				voice->control ^= CONTROL_DIR;										\
-				goto reverse;														\
+				/* uni-directional looping */										\
+				case CONTROL_LPE:													\
+					accum = ((voice)->end - ((voice)->start - accum)) & accum_mask;	\
+					break;															\
+																					\
+				/* trans-wave looping */											\
+				case CONTROL_BLE:													\
+					accum = ((voice)->end - ((voice)->start - accum)) & accum_mask;	\
+					(voice)->control = ((voice)->control & ~CONTROL_LOOPMASK) | CONTROL_LEI;\
+					break;															\
+																					\
+				/* bi-directional looping */										\
+				case CONTROL_LPE | CONTROL_BLE:										\
+					accum = ((voice)->start + ((voice)->start - accum)) & accum_mask;\
+					(voice)->control ^= CONTROL_DIR;								\
+					goto reverse;													\
+			}																		\
 		}																			\
 	}																				\
 } while (0)
@@ -754,8 +805,8 @@ static void generate_samples(struct ES5506Chip *chip, INT32 *left, INT32 *right,
 		struct ES5506Voice *voice = &chip->voice[v];
 		UINT16 *base = chip->region_base[voice->control >> 14];
 
-		/* special case: if end == start, stop the voice */
-		if (voice->start == voice->end)
+		/* special case: if end == start, stop the voice (ES5506 only) */
+		if (accum_mask != 0x7fffffff && voice->start == voice->end)
 			voice->control |= CONTROL_STOP0;
 
 		/* generate from the appropriate source */
