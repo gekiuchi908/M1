@@ -56,7 +56,7 @@ static INT32 UNPACK(UINT16 val)
 void SCSPDSP_Init(struct _SCSPDSP *DSP)
 {
 	memset(DSP,0,sizeof(struct _SCSPDSP));
-	DSP->RBL=0x8000;
+	DSP->RBL=8*1024;
 	DSP->Stopped=1;
 }
 
@@ -285,13 +285,15 @@ void SCSPDSP_Step(struct _SCSPDSP *DSP)
 			if(NXADR)
 				ADDR++;
 			if(!TABLE)
-				ADDR&=DSP->RBL-1;
+				ADDR&=DSP->RBL ? (DSP->RBL-1) : 0x1FFF;
 			else
 				ADDR&=0xFFFF;
 			//ADDR<<=1;
 			//ADDR+=DSP->RBP<<13;
 			//MEMVAL=DSP->SCSPRAM[ADDR>>1];
 			ADDR+=DSP->RBP<<12;
+			if(DSP->SCSPRAM_LENGTH)
+				ADDR&=DSP->SCSPRAM_LENGTH-1;
 			if(MRD && (step&1))	//memory only allowed on odd? DoA inserts NOPs on even
 			{
 				if(NOFL)

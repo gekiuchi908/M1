@@ -449,6 +449,7 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 	// get SCSP RAM
 	{
 		memset(SCSP,0,sizeof(*SCSP));
+		SCSPDSP_Init(&SCSP->DSP);
 
 		if (!i)
 		{
@@ -459,7 +460,7 @@ static void SCSP_Init(struct _SCSP *SCSP, const struct SCSPinterface *intf)
 			SCSP->Master=0;
 		}
 
-		if (intf->region)
+		if (intf->region[0])
 		{
 			SCSP->SCSPRAM = (unsigned char *)intf->region[0];
 			SCSP->SCSPRAM_LENGTH = 512*1024;
