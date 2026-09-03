@@ -1612,6 +1612,7 @@ void YM2151ResetChip(int num)
 	{
 		memset(&chip->oper[i],'\0',sizeof(YM2151Operator));
 		chip->oper[i].volume = MAX_ATT_INDEX;
+		chip->oper[i].kc_i = 768; /* min kc_i value */
 	}
 
 	chip->eg_timer = 0;
@@ -2213,13 +2214,16 @@ INLINE void advance(void)
 		{
 			INT32 mod_ind = PSG->lfp;		/* -128..+127 (8bits signed) */
 			if (op->pms < 6)
-				mod_ind >>= (6 - op->pms);
+				mod_ind >>= (6 - (int)op->pms);
 			else
-				mod_ind <<= (op->pms - 5);
+				mod_ind <<= ((int)op->pms - 5);
 
 			if (mod_ind)
 			{
-				UINT32 kc_channel =	op->kc_i + mod_ind;
+				INT32 kc_signed = (INT32)op->kc_i + mod_ind;
+				UINT32 kc_channel = (kc_signed < 0) ? 0 : (UINT32)kc_signed;
+				if (kc_channel >= 10*768)
+					kc_channel = 10*768 - 1;
 				(op+0)->phase += ( (PSG->freq[ kc_channel + (op+0)->dt2 ] + (op+0)->dt1) * (op+0)->mul ) >> 1;
 				(op+1)->phase += ( (PSG->freq[ kc_channel + (op+1)->dt2 ] + (op+1)->dt1) * (op+1)->mul ) >> 1;
 				(op+2)->phase += ( (PSG->freq[ kc_channel + (op+2)->dt2 ] + (op+2)->dt1) * (op+2)->mul ) >> 1;
