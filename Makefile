@@ -108,7 +108,7 @@ OBJS += cpu/m37710o2.o cpu/m37710o3.o cpu/hd6309.o cpu/tms32010.o cpu/pic16c5x.o
 OBJS += cpu/h83002.o cpu/h8periph.o cpu/tms32031.o cpu/2100dasm.o
 OBJS += cpu/i8085.o
 
-SRCS=$(OBJS:.o=.c)
+SRCS = $(foreach obj,$(OBJS) $(CUIOBJS),$(firstword $(wildcard $(obj:.o=.cpp) $(obj:.o=.c))))
 
 %.o: %.c
 	@echo Compiling $<
@@ -145,7 +145,7 @@ check:
 	@mkdir -p check-results
 	@for src in $(SRCS); do \
 		filename=$$(basename "$$src"); \
-		echo "--- Checking $filename" > check-results/"$$filename.txt"; \
+		echo "--- Checking $$filename" > check-results/"$$filename.txt"; \
 		clang-tidy "$$src" >> check-results/"$$filename.txt"; \
 	done
 
