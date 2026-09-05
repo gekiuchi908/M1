@@ -415,9 +415,9 @@ data8_t K053260_read( int chip, offs_t offset )
 
 		case 0x2e: /* read rom */
 			if ( ic->mode & 1 ) {
-				unsigned long offs = ic->channels[0].start + ( ic->channels[0].pos >> BASE_SHIFT ) + ( ic->channels[0].bank << 16 );
+				unsigned long offs = ic->channels[0].start + ( ( ic->channels[0].pos >> BASE_SHIFT ) & 0xffff ) + ( ic->channels[0].bank << 16 );
 
-				ic->channels[0].pos += ( 1 << 16 );
+				ic->channels[0].pos += ( 1 << BASE_SHIFT );
 
 				if ( offs > ic->rom_size ) {
 					logerror("%06x: K53260: Attempting to read past rom size in rom Read Mode (offs = %06x, size = %06x).\n",activecpu_get_pc(),offs,ic->rom_size );
