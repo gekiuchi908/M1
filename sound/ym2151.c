@@ -2165,11 +2165,11 @@ INLINE void advance(void)
 		if (i<64)						/* i = 0..63 */
 			p = i*2;					/* 0 to 126 step +2 */
 		else if (i<128)					/* i = 64..127 */
-				p = 255 - i*2;			/* 127 to 1 step -2 */
-			else if (i<192)				/* i = 128..191 */
-					p = 256 - i*2;		/* 0 to -126 step -2*/
-				else					/* i = 192..255 */
-					p = i*2 - 511;		/*-127 to -1 step +2*/
+			p = 255 - i*2;			/* 127 to 1 step -2 */
+		else if (i<192)				/* i = 128..191 */
+			p = 256 - i*2;		/* 0 to -126 step -2*/
+		else							/* i = 192..255 */
+			p = i*2 - 511;		/*-127 to -1 step +2*/
 		break;
 	case 3:
 	default:	/*keep the compiler happy*/

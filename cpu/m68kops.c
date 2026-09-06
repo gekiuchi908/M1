@@ -6282,7 +6282,7 @@ void m68k_op_bfextu_32_ai(void)
 
 
 		if(BIT_B(word2))
-		offset = MAKE_INT_32(REG_D[offset&7]);
+			offset = MAKE_INT_32(REG_D[offset&7]);
 		if(BIT_5(word2))
 			width = REG_D[width&7];
 
@@ -6329,7 +6329,7 @@ void m68k_op_bfextu_32_di(void)
 
 
 		if(BIT_B(word2))
-		offset = MAKE_INT_32(REG_D[offset&7]);
+			offset = MAKE_INT_32(REG_D[offset&7]);
 		if(BIT_5(word2))
 			width = REG_D[width&7];
 
@@ -6376,7 +6376,7 @@ void m68k_op_bfextu_32_ix(void)
 
 
 		if(BIT_B(word2))
-		offset = MAKE_INT_32(REG_D[offset&7]);
+			offset = MAKE_INT_32(REG_D[offset&7]);
 		if(BIT_5(word2))
 			width = REG_D[width&7];
 
@@ -6423,7 +6423,7 @@ void m68k_op_bfextu_32_aw(void)
 
 
 		if(BIT_B(word2))
-		offset = MAKE_INT_32(REG_D[offset&7]);
+			offset = MAKE_INT_32(REG_D[offset&7]);
 		if(BIT_5(word2))
 			width = REG_D[width&7];
 
@@ -6470,7 +6470,7 @@ void m68k_op_bfextu_32_al(void)
 
 
 		if(BIT_B(word2))
-		offset = MAKE_INT_32(REG_D[offset&7]);
+			offset = MAKE_INT_32(REG_D[offset&7]);
 		if(BIT_5(word2))
 			width = REG_D[width&7];
 
@@ -6517,7 +6517,7 @@ void m68k_op_bfextu_32_pcdi(void)
 
 
 		if(BIT_B(word2))
-		offset = MAKE_INT_32(REG_D[offset&7]);
+			offset = MAKE_INT_32(REG_D[offset&7]);
 		if(BIT_5(word2))
 			width = REG_D[width&7];
 
@@ -6564,7 +6564,7 @@ void m68k_op_bfextu_32_pcix(void)
 
 
 		if(BIT_B(word2))
-		offset = MAKE_INT_32(REG_D[offset&7]);
+			offset = MAKE_INT_32(REG_D[offset&7]);
 		if(BIT_5(word2))
 			width = REG_D[width&7];
 

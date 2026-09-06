@@ -193,9 +193,6 @@ WRITE_HANDLER( starwars_m6532_w )
 		default:
 			return;
 	}
-
-	return; /* will never execute this */
-
 }
 
 
@@ -223,7 +220,6 @@ WRITE_HANDLER( starwars_sout_w )
 {
 	port_A |= 0x40; /* result from sound cpu pending */
 	main_data = data;
-	return;
 }
 
 

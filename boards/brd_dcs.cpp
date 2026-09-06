@@ -9,7 +9,6 @@ extern "C" {
 unsigned dasm2100(char *buffer, unsigned pc);
 void adsp2104_reset(void *param);
 void adsp2105_reset(void *param);
-void adsp2104_get_info(UINT32 state, union cpuinfo *info);
 void adsp2104_set_info(UINT32 state, union cpuinfo *info);
 }
 
@@ -951,7 +950,7 @@ static void dcs_dac_update(int num, INT16 *buffer, int length)
 			*buffer++ = source[indx & DCS_BUFFER_MASK];
 		}
 
-if (i < length)
+//if (i < length)
 //	logerror((char *)"DCS ran out of input data\n");
 
 		/* fill the rest with the last sample */

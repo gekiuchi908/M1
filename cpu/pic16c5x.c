@@ -937,7 +937,7 @@ void pic16C5x_set_reg(int regnum, unsigned val)
 			if (regnum <= REG_SP_CONTENTS)
 			{
 				unsigned offset = (REG_SP_CONTENTS - regnum);
-				if (offset < 4)
+				if (offset < 2)
 					R.STACK[offset] = val;
 			}
 	}

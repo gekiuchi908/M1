@@ -511,12 +511,79 @@ static void retr(void)
 		R.irq_extra_cycles += Timer_IRQ();			/* Service pending Timer/Counter IRQ */
 	}
 }
-static void rl_a(void)		 { UINT8 i=R.A & 0x80; R.A <<= 1; if (i) R.A |= 0x01; else R.A &= 0xfe; }
+static void rl_a(void)
+{
+	UINT8 i = R.A & 0x80;
+	R.A <<= 1;
+	if (i)
+	{
+		R.A |= 0x01;
+	}
+	else
+	{
+		R.A &= 0xfe;
+	}
+}
+
 /* NS990113 */
-static void rlc_a(void) 	 { UINT8 i=M_Cy; if (R.A & 0x80) SET(C_FLAG); else CLR(C_FLAG); R.A <<= 1; if (i) R.A |= 0x01; else R.A &= 0xfe; }
-static void rr_a(void)		 { UINT8 i=R.A & 1; R.A >>= 1; if (i) R.A |= 0x80; else R.A &= 0x7f; }
+static void rlc_a(void)
+{
+	UINT8 i = M_Cy;
+	if (R.A & 0x80)
+	{
+		SET(C_FLAG);
+	}
+	else
+	{
+		CLR(C_FLAG);
+	}
+	R.A <<= 1;
+	if (i)
+	{
+		R.A |= 0x01;
+	}
+	else
+	{
+		R.A &= 0xfe;
+	}
+}
+
+static void rr_a(void)
+{
+	UINT8 i = R.A & 1;
+	R.A >>= 1;
+	if (i)
+	{
+		R.A |= 0x80;
+	}
+	else
+	{
+		R.A &= 0x7f;
+	}
+}
+
 /* NS990113 */
-static void rrc_a(void)		 { UINT8 i=M_Cy; if (R.A & 1) SET(C_FLAG); else CLR(C_FLAG); R.A >>= 1; if (i) R.A |= 0x80; else R.A &= 0x7f; }
+static void rrc_a(void)
+{
+	UINT8 i = M_Cy;
+	if (R.A & 1)
+	{
+		SET(C_FLAG);
+	}
+	else
+	{
+		CLR(C_FLAG);
+	}
+	R.A >>= 1;
+	if (i)
+	{
+		R.A |= 0x80;
+	}
+	else
+	{
+		R.A &= 0x7f;
+	}
+}
 static void sel_mb0(void)	{ R.A11 = 0; R.A11ff = 0; }
 static void sel_mb1(void)	 { R.A11ff = 0x800; if (R.irq_executing == I8039_NO_INT) R.A11 = 0x800; }
 static void sel_rb0(void)	 { CLR(B_FLAG); regPTR = 0;  }

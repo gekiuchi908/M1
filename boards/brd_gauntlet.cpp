@@ -79,8 +79,14 @@ static unsigned int gnt_readmem(unsigned int address)
 
 	if (address >= 0x1030 && address <= 0x103f)
 	{
-		if (tms5220_ready_r()) status &= ~0x20;
-			else status |= 0x20;
+		if (tms5220_ready_r())
+		{
+			status &= ~0x20;
+		}
+		else
+		{
+			status |= 0x20;
+		}
 
 		return status;
 	}

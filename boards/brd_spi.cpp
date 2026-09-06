@@ -322,8 +322,6 @@ static WRITE8_HANDLER( flashrom_write )
 	logerror((char *)"Flash Write: %08X, %02X\n", offset, data);
 }
 
-extern "C" { void z80_set_irqvec(int vector); }
-
 static void opx_irq(int state)
 {
 //	printf("opx_irq: %d\n", state);

@@ -8,7 +8,6 @@ extern "C" {
 unsigned dasm2100(char *buffer, unsigned pc);
 void adsp2104_reset(void *param);
 void adsp2105_reset(void *param);
-void adsp2115_get_info(UINT32 state, union cpuinfo *info);
 void adsp2115_set_info(UINT32 state, union cpuinfo *info);
 }
 

@@ -501,7 +501,8 @@ static void ymf278b_C_w(int num, UINT8 reg, UINT8 data)
 
 					ymf278b_envelope_next(slot, chip->clock_ratio);
 
-#if 1 // def VERBOSE
+//#if 1 // def VERBOSE
+#ifdef VERBOSE
 					printf("YMF278B: slot %2d wave %3d lfo=%d vib=%d ar=%d d1r=%d dl=%d d2r=%d rc=%d rr=%d am=%d\n", snum, slot->wave,
 					  	 slot->lfo, slot->vib, slot->AR, slot->D1R, slot->DL, slot->D2R, slot->RC, slot->RR, slot->AM);
 					printf("                  b=%d, start=%x, loop=%x, end=%x, oct=%d, fn=%d, step=%x\n", slot->bits, slot->startaddr, slot->loopaddr>>16, slot->endaddr>>16, oct, slot->FN, slot->step);
@@ -509,7 +510,8 @@ static void ymf278b_C_w(int num, UINT8 reg, UINT8 data)
 				}
 				else
 				{
-#if 1 //def VERBOSE
+//#if 1 //def VERBOSE
+#ifdef VERBOSE
 					printf("YMF278B: slot %2d off\n", snum);
 #endif
 					if(slot->active)

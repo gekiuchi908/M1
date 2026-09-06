@@ -1120,9 +1120,9 @@ void pokey_register_w(int chip, int offs, int data)
 					timer_pulse(1.0 * p->divisor[CHAN2] / intf.baseclock,
 						(chip<<3)|IRQ_TIMR2|IRQ_TIMR1, pokey_timer_expire);
 			}
-        }
-        else
-        {
+		}
+		else
+		{
 			if( p->divisor[CHAN1] > 4 )
 			{
 				LOG_TIMER(("POKEY #%d timer1 after %d clocks\n", chip, p->divisor[CHAN1]));
@@ -1140,15 +1140,15 @@ void pokey_register_w(int chip, int offs, int data)
 					timer_pulse(1.0 * p->divisor[CHAN2] / intf.baseclock,
 						(chip<<3)|IRQ_TIMR2, pokey_timer_expire);
 			}
-        }
+		}
 
 		/* Note: p[chip] does not have a timer #3 */
 
 		if( p->AUDCTL & CH34_JOINED )
-        {
-            /* not sure about this: if audc4 == 0000xxxx don't start timer 4 ? */
+		{
+			/* not sure about this: if audc4 == 0000xxxx don't start timer 4 ? */
 			if( p->AUDC[CHAN4] & 0xf0 )
-            {
+			{
 				if( p->divisor[CHAN4] > 4 )
 				{
 					LOG_TIMER(("POKEY #%d timer4 after %d clocks\n", chip, p->divisor[CHAN4]));
@@ -1157,10 +1157,10 @@ void pokey_register_w(int chip, int offs, int data)
 						timer_pulse(1.0 * p->divisor[CHAN4] / intf.baseclock,
 							(chip<<3)|IRQ_TIMR4, pokey_timer_expire);
 				}
-            }
-        }
-        else
-        {
+			}
+		}
+		else
+		{
 			if( p->divisor[CHAN4] > 4 )
 			{
 				LOG_TIMER(("POKEY #%d timer4 after %d clocks\n", chip, p->divisor[CHAN4]));
@@ -1209,12 +1209,12 @@ void pokey_register_w(int chip, int offs, int data)
 
         /* acknowledge one or more IRQST bits ? */
 		if( p->IRQST & ~data )
-        {
-            /* reset IRQST bits that are masked now */
+		{
+			/* reset IRQST bits that are masked now */
 			p->IRQST &= data;
-        }
-        else
-        {
+		}
+		else
+		{
 			/* enable/disable timers now to avoid unneeded
                breaking of the CPU cores for masked timers */
 			if( p->timer[TIMER1] && ((p->IRQEN^data) & IRQ_TIMR1) )
@@ -1256,7 +1256,7 @@ void pokey_register_w(int chip, int offs, int data)
         /* process channel 1 frequency */
 		if( p->AUDCTL & CH1_HICLK )
 			new_val = p->AUDF[CHAN1] + DIVADD_HICLK;
-        else
+		else
 			new_val = (p->AUDF[CHAN1] + DIVADD_LOCLK) * p->clockmult;
 
 		LOG_SOUND(("POKEY #%d chan1 %d\n", chip, new_val));
@@ -1284,14 +1284,14 @@ void pokey_register_w(int chip, int offs, int data)
     {
         /* process channel 2 frequency */
 		if( p->AUDCTL & CH12_JOINED )
-        {
+		{
 			if( p->AUDCTL & CH1_HICLK )
 				new_val = p->AUDF[CHAN2] * 256 + p->AUDF[CHAN1] + DIVADD_HICLK_JOINED;
-            else
+			else
 				new_val = (p->AUDF[CHAN2] * 256 + p->AUDF[CHAN1] + DIVADD_LOCLK) * p->clockmult;
 			LOG_SOUND(("POKEY #%d chan1+2 %d\n", chip, new_val));
-        }
-        else
+		}
+		else
 		{
 			new_val = (p->AUDF[CHAN2] + DIVADD_LOCLK) * p->clockmult;
 			LOG_SOUND(("POKEY #%d chan2 %d\n", chip, new_val));
@@ -1321,7 +1321,7 @@ void pokey_register_w(int chip, int offs, int data)
         /* process channel 3 frequency */
 		if( p->AUDCTL & CH3_HICLK )
 			new_val = p->AUDF[CHAN3] + DIVADD_HICLK;
-        else
+		else
 			new_val = (p->AUDF[CHAN3] + DIVADD_LOCLK) * p->clockmult;
 
 		LOG_SOUND(("POKEY #%d chan3 %d\n", chip, new_val));
@@ -1349,14 +1349,14 @@ void pokey_register_w(int chip, int offs, int data)
     {
         /* process channel 4 frequency */
 		if( p->AUDCTL & CH34_JOINED )
-        {
+		{
 			if( p->AUDCTL & CH3_HICLK )
 				new_val = p->AUDF[CHAN4] * 256 + p->AUDF[CHAN3] + DIVADD_HICLK_JOINED;
-            else
+			else
 				new_val = (p->AUDF[CHAN4] * 256 + p->AUDF[CHAN3] + DIVADD_LOCLK) * p->clockmult;
 			LOG_SOUND(("POKEY #%d chan3+4 %d\n", chip, new_val));
-        }
-        else
+		}
+		else
 		{
 			new_val = (p->AUDF[CHAN4] + DIVADD_LOCLK) * p->clockmult;
 			LOG_SOUND(("POKEY #%d chan4 %d\n", chip, new_val));
@@ -1435,7 +1435,7 @@ void pokey4_serin_ready(int after)
 void pokey_break_w(int chip, int shift)
 {
 	struct POKEYregisters *p = &pokey[chip];
-    if( shift )                     /* shift code ? */
+	if( shift )                     /* shift code ? */
 		p->SKSTAT |= SK_SHIFT;
 	else
 		p->SKSTAT &= ~SK_SHIFT;

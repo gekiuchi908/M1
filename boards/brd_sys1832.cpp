@@ -15,7 +15,6 @@ static void S32_SendCmd(int cmda, int cmdb);
 static void YM_IRQHandler(int irq);
 
 static int cmd_latch;
-static void YM_IRQHandler(int irq);
 
 struct RF5C68interface sys18_rf5c68_interface = {
   S18_RF_CLOCK,

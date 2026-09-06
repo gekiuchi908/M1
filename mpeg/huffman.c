@@ -80,11 +80,15 @@ int len;
 		        half_lag = lag >> 1;
 
 		        if (*h_tab < chunk)
+		        {
 		                h_tab += half_lag;
+		        }
 		        else
+		        {
 		                h_tab -= half_lag;
+		        }
 
-                        lag -= half_lag;
+		        lag -= half_lag;
 		}
 
 		len=(*h_tab>>8)&0x1f;

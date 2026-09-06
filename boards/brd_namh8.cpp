@@ -158,7 +158,8 @@ static void nh8_write_memory_16(unsigned int address, unsigned int data)
 //		if (address >= 0x83000 && address <= 0x83010)
 //			printf("[%06x]: %04x\n", address, data);
 		address -= 0x80000;
-		return mem_writeword_swap((unsigned short *)(workram+address), data);
+		mem_writeword_swap((unsigned short *)(workram+address), data);
+		return;
 	}
 
 	if (address >= 0x280000 && address <= 0x287fff)
@@ -170,7 +171,8 @@ static void nh8_write_memory_16(unsigned int address, unsigned int data)
 	if (address >= 0xfffd10 && address < 0xffff10)
 	{
 		address = address - 0xfffd10 + 0x80000;
-		return mem_writeword_swap((unsigned short *)(workram+address), data);
+		mem_writeword_swap((unsigned short *)(workram+address), data);
+		return;
 	}
 
 	if (address >= H8_REG_START && address <= 0xffffffff)
@@ -296,7 +298,8 @@ static void nd1h8_write_memory_16(unsigned int address, unsigned int data)
 	if (address >= 0x200000 && address < 0x300000)
 	{
 		address -= 0x200000;
-		return mem_writeword_swap((unsigned short *)(workram+address), data);
+		mem_writeword_swap((unsigned short *)(workram+address), data);
+		return;
 	}
 
 	if (address >= 0xa00000 && address <= 0xa07fff)
@@ -308,7 +311,8 @@ static void nd1h8_write_memory_16(unsigned int address, unsigned int data)
 	if (address >= 0xfffd10 && address < 0xffff10)
 	{
 		address = address - 0xfffd10 + 0x80000;
-		return mem_writeword_swap((unsigned short *)(workram+address), data);
+		mem_writeword_swap((unsigned short *)(workram+address), data);
+		return;
 	}
 
 	if (address >= H8_REG_START)

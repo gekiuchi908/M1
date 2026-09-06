@@ -74,8 +74,14 @@ static unsigned int pb_readmem(unsigned int address)
 
 	if (address == 0x1840)
 	{
-		if (tms5220_ready_r()) status &= ~0x04;
-			else status |= 0x04;
+		if (tms5220_ready_r())
+		{
+			status &= ~0x04;
+		}
+		else
+		{
+			status |= 0x04;
+		}
 
 		return status;
 	}

@@ -402,15 +402,31 @@ static int h8_get_priority(UINT8 bit)
 	switch(bit)
 	{
 	case 12: // IRQ0
-		if (h8.per_regs[0xF8]&0x80) res = 1; break;
+		if (h8.per_regs[0xF8] & 0x80)
+		{
+			res = 1;
+		}
+		break;
 	case 13: // IRQ1
-		if (h8.per_regs[0xF8]&0x40) res = 1; break;
+		if (h8.per_regs[0xF8] & 0x40)
+		{
+			res = 1;
+		}
+		break;
 	case 14: // IRQ2
 	case 15: // IRQ3
-		if (h8.per_regs[0xF8]&0x20) res = 1; break;
+		if (h8.per_regs[0xF8] & 0x20)
+		{
+			res = 1;
+		}
+		break;
 	case 16: // IRQ4
 	case 17: // IRQ5
-		if (h8.per_regs[0xF8]&0x10) res = 1; break;
+		if (h8.per_regs[0xF8] & 0x10)
+		{
+			res = 1;
+		}
+		break;
 	}
 	return res;
 }
@@ -3747,12 +3763,42 @@ static void h8_set_info(UINT32 state, union cpuinfo *info)
 	case CPUINFO_INT_REGISTER + H8_E6:   h8.regs[6] = info->i;                      break;
 	case CPUINFO_INT_REGISTER + H8_E7:   h8.regs[7] = info->i;                      break;
 
-	case CPUINFO_INT_INPUT_STATE + H8_IRQ0: if (info->i) h8_3002_InterruptRequest(12);      break;
-	case CPUINFO_INT_INPUT_STATE + H8_IRQ1: if (info->i) h8_3002_InterruptRequest(13);      break;
-	case CPUINFO_INT_INPUT_STATE + H8_IRQ2: if (info->i) h8_3002_InterruptRequest(14);      break;
-	case CPUINFO_INT_INPUT_STATE + H8_IRQ3: if (info->i) h8_3002_InterruptRequest(15);      break;
-	case CPUINFO_INT_INPUT_STATE + H8_IRQ4: if (info->i) h8_3002_InterruptRequest(16);      break;
-	case CPUINFO_INT_INPUT_STATE + H8_IRQ5: if (info->i) h8_3002_InterruptRequest(17);      break;
+	case CPUINFO_INT_INPUT_STATE + H8_IRQ0:
+		if (info->i)
+		{
+			h8_3002_InterruptRequest(12);
+		}
+		break;
+	case CPUINFO_INT_INPUT_STATE + H8_IRQ1:
+		if (info->i)
+		{
+			h8_3002_InterruptRequest(13);
+		}
+		break;
+	case CPUINFO_INT_INPUT_STATE + H8_IRQ2:
+		if (info->i)
+		{
+			h8_3002_InterruptRequest(14);
+		}
+		break;
+	case CPUINFO_INT_INPUT_STATE + H8_IRQ3:
+		if (info->i)
+		{
+			h8_3002_InterruptRequest(15);
+		}
+		break;
+	case CPUINFO_INT_INPUT_STATE + H8_IRQ4:
+		if (info->i)
+		{
+			h8_3002_InterruptRequest(16);
+		}
+		break;
+	case CPUINFO_INT_INPUT_STATE + H8_IRQ5:
+		if (info->i)
+		{
+			h8_3002_InterruptRequest(17);
+		}
+		break;
 
 	default:
 		logerror("h8_set_info unknown request %x\n", state);
