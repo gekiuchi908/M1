@@ -421,7 +421,7 @@ static void m6809_getctx(void *ctx)
 
 	*ourctx++ = rw6809;
 
-	m6809_get_context(ourctx);
+	m6809_get_context((void *)ourctx);
 }
 
 static void m6809_setctx(void *ctx)
@@ -432,7 +432,7 @@ static void m6809_setctx(void *ctx)
 
 	rw6809 = *ourctx++;
 
-	m6809_set_context(ourctx);
+	m6809_set_context((void *)ourctx);
 }
 
 static void m6502_getctx(void *ctx)
@@ -443,7 +443,7 @@ static void m6502_getctx(void *ctx)
 
 	*ourctx++ = rw6502;
 
-	m6502_get_context(ourctx);
+	m6502_get_context((void *)ourctx);
 }
 
 static void m6502_setctx(void *ctx)
@@ -454,7 +454,7 @@ static void m6502_setctx(void *ctx)
 
 	rw6502 = *ourctx++;
 
-	m6502_set_context(ourctx);
+	m6502_set_context((void *)ourctx);
 }
 
 // do a z80c irq in a context-safe way
@@ -491,14 +491,13 @@ void m1snd_setm6809irq(int cpunum, int irqline, int state)
 void m1snd_add6809(long clock, void *handlers)
 {
 	char *ctx;
-	int cpunum;
 
 	rw6809 = handlers;
 
 	ctx = malloc(4*1024);
-	cpunum = timer_add_cpu(CPU_M6809, clock, m6809_execute, m6809_getcycles, m6809_yield, m6809_getctx, m6809_setctx, ctx);
+	timer_add_cpu(CPU_M6809, clock, m6809_execute, m6809_getcycles, m6809_yield, m6809_getctx, m6809_setctx, ctx);
 
-//	printf("Adding 6809 CPU #%d, ctx=%x\n", cpunum, (unsigned int)ctx);
+//	printf("Adding 6809 CPU, ctx=%x\n", (unsigned int)ctx);
 
 	m6809_reset(NULL);
 	m6809_set_irq_callback(m6809_irq_callback);
@@ -689,7 +688,7 @@ static void z80_getctx(void *ctx)
 
 	ourctx = (M1Z80T **)ctx;
 
-	z80_get_context(ourctx);
+	z80_get_context((void *)ourctx);
 }
 
 static void z80_setctx(void *ctx)
@@ -698,7 +697,7 @@ static void z80_setctx(void *ctx)
 
 	ourctx = (M1Z80T **)ctx;
 
-	z80_set_context(ourctx);
+	z80_set_context((void *)ourctx);
 }
 
 // add a Z80 cpu (MAME core)

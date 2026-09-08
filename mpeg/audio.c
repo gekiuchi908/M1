@@ -76,7 +76,8 @@ int decodeMPEGOneFrame(struct AUDIO_HEADER *header)
 {
 	int snd_eof = 0, g;
 
-	if ((g=gethdr(header))!=0) {
+	g = gethdr(header);
+	if (g != 0) {
 		report_header_error(g);
 		snd_eof=1;
 		return snd_eof;
@@ -111,7 +112,8 @@ int g,snd_eof=0;
 	
 	cnt = 0;
 
-	if ((g=gethdr(&header))!=0) {
+	g = gethdr(&header);
+	if (g != 0) {
 		report_header_error(g);
 		return -1;
 	}

@@ -388,6 +388,7 @@ OP( 0x61, i_popa  ) {
 	POP(I.regs.w[IX]);
 	POP(I.regs.w[BP]);
     POP(tmp);
+    (void)tmp;
 	POP(I.regs.w[BW]);
 	POP(I.regs.w[DW]);
 	POP(I.regs.w[CW]);
@@ -755,8 +756,8 @@ OP( 0xd3, i_rotshft_wcl ) {
 	}
 }
 
-OP( 0xd4, i_aam    ) { UINT32 mult=FETCH; mult=0; I.regs.b[AH] = I.regs.b[AL] / 10; I.regs.b[AL] %= 10; SetSZPF_Word(I.regs.w[AW]); CLKS(15,15,12); }
-OP( 0xd5, i_aad    ) { UINT32 mult=FETCH; mult=0; I.regs.b[AL] = I.regs.b[AH] * 10 + I.regs.b[AL]; I.regs.b[AH] = 0; SetSZPF_Byte(I.regs.b[AL]); CLKS(7,7,8); }
+OP( 0xd4, i_aam    ) { (void)FETCH; I.regs.b[AH] = I.regs.b[AL] / 10; I.regs.b[AL] %= 10; SetSZPF_Word(I.regs.w[AW]); CLKS(15,15,12); }
+OP( 0xd5, i_aad    ) { (void)FETCH; I.regs.b[AL] = I.regs.b[AH] * 10 + I.regs.b[AL]; I.regs.b[AH] = 0; SetSZPF_Byte(I.regs.b[AL]); CLKS(7,7,8); }
 OP( 0xd6, i_setalc ) { I.regs.b[AL] = (CF)?0xff:0x00; nec_ICount-=3; logerror("%06x: Undefined opcode (SETALC)\n",activecpu_get_pc()); }
 OP( 0xd7, i_trans  ) { UINT32 dest = (I.regs.w[BW]+I.regs.b[AL])&0xffff; I.regs.b[AL] = GetMemB(DS, dest); CLKS(9,9,5); }
 OP( 0xd8, i_fpo    ) { GetModRM; nec_ICount-=2;	logerror("%06x: Unimplemented floating point control %04x\n",activecpu_get_pc(),ModRM); }
@@ -1251,15 +1252,6 @@ void v30_set_irq_line(int irqline, int state) { nec_set_irq_line(irqline,state);
 void v30_set_irq_callback(int (*callback)(int irqline)) { nec_set_irq_callback(callback); }
 const char *v30_info(void *context, int regnum)
 {
-    static char buffer[32][63+1];
-    static int which = 0;
-    nec_Regs *r = context;
-
-    which = (which+1) % 32;
-    buffer[which][0] = '\0';
-    if( !context )
-        r = &I;
-
     switch( regnum )
     {
         case CPU_INFO_NAME: return "V30";
@@ -1303,15 +1295,6 @@ void v33_set_irq_line(int irqline, int state) { nec_set_irq_line(irqline,state);
 void v33_set_irq_callback(int (*callback)(int irqline)) { nec_set_irq_callback(callback); }
 const char *v33_info(void *context, int regnum)
 {
-    static char buffer[32][63+1];
-    static int which = 0;
-    nec_Regs *r = context;
-
-    which = (which+1) % 32;
-    buffer[which][0] = '\0';
-    if( !context )
-        r = &I;
-
     switch( regnum )
     {
         case CPU_INFO_NAME: return "V33";

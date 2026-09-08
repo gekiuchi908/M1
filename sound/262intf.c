@@ -55,7 +55,7 @@ int YMF262_sh_start(const struct MachineSound *msound)
 //		rate = intf_262->baseclock/288;
 
 	/* Timer state clear */
-	memset(Timer_262,0,sizeof(Timer_262));
+	memset((void *)Timer_262,0,sizeof(Timer_262));
 
 	/* stream system initialize */
 	if ( YMF262Init(intf_262->num,intf_262->baseclock,rate) != 0)

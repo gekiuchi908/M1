@@ -219,7 +219,7 @@ static int rom_loadrom(RomEntryT *entry, unzFile zipArc, int region)
 			mem_readlong_swap(&psha[3]),
 			mem_readlong_swap(&psha[4]));
 
-		if (strncmp(sha1_txt, entry->sha1, 40))
+		if (strncmp(sha1_txt, entry->sha1, 40) != 0)
 		{
 			char str[256];
 
@@ -536,7 +536,7 @@ int rom_loadgame(void)
 						mem_readlong_swap(&psha[3]),
 						mem_readlong_swap(&psha[4]));
 
-					if ((strncmp(sha1_txt, games[curgame].roms[i].sha1, 40)) || (strncmp(md5_txt, games[curgame].roms[i].md5, 32)))
+					if ((strncmp(sha1_txt, games[curgame].roms[i].sha1, 40) != 0) || (strncmp(md5_txt, games[curgame].roms[i].md5, 32) != 0))
 					{
 						char str[256];
 

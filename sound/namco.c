@@ -102,7 +102,8 @@ static int build_decoded_waveform(int region)
 	else
 		size = 32 * 8;		/* 32 samples, 8 waveforms */
 
-	if ((p = (INT16 *)auto_malloc(size * MAX_VOLUME * sizeof (INT16))) == NULL)
+	p = (INT16 *)auto_malloc(size * MAX_VOLUME * sizeof (INT16));
+	if (p == NULL)
 		return 1;
 
 	for (v = 0; v < MAX_VOLUME; v++)

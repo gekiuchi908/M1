@@ -42,7 +42,7 @@ static struct BSMT2000interface bsmt2000_interface =
 };
 
 // download sequencer
-static void _timer(int refcon)
+static void dl_timer(int refcon)
 {
 	if (!bytes_left) return;
 //	printf("pushing %x\n", *dlp);
@@ -58,7 +58,7 @@ static READ_HANDLER( sound_data_r )
 	main_to_sound_ready = 0;
 	cpu_set_irq_line(0, IRQ_LINE_NMI, CLEAR_LINE);
 
-	_timer(0);
+	dl_timer(0);
 
 //	printf("RL: 0x%x,\n", ret);
 	return ret;
@@ -218,7 +218,7 @@ static void BT_SendCmd(int cmda, int cmdb)
 		sequence[10+length+8] = 1;
 		sequence[10+length+9] = 1;
 		dlp = sequence;
-		_timer(0);
+		dl_timer(0);
 
 		if (cmda > 6)
 		{

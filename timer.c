@@ -127,13 +127,16 @@ static void timer_update_all_timers(double updtime)
 				else
 				{
 					// looping timer, make it so
-//					printf("looping: new period %f\n", tptr->period);
 					if (tptr->period <= 0.0) 
 					{
 //						printf("new period zero, setting to NEVER\n");
 						tptr->period = TIME_NEVER;
 					}
-					tptr->time_to_fire = tptr->period;
+					tptr->time_to_fire += tptr->period;
+					if (tptr->time_to_fire <= 0.0)
+					{
+						tptr->time_to_fire = tptr->period;
+					}
 				}
 			}
 
@@ -344,6 +347,7 @@ int timer_add_cpu(int type, long clock, int(*runroutine)(int), int(*getcycles)(v
 	}
 
 	assert(found);
+	(void)found;
 
 	memset(&cpus[cpu], 0, sizeof(CPUTimeT));
 

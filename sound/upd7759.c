@@ -501,7 +501,7 @@ void UPD7759_start_w(int chip, UINT8 data)
 	if(!old_start && data && !ch->playing && UPD7759_chips.intf->mode == UPD7759_STANDALONE_MODE) {
 		UINT8 scount;
 
-		if(memcmp(ch->cur_rombank+1, "\x5A\xA5\x69\x55", 4))
+		if (memcmp(ch->cur_rombank+1, "\x5A\xA5\x69\x55", 4) != 0)
 			logerror("UPD7759.%d: Header check failure on sample start\n", chip);
 
 		scount = ch->cur_rombank[0];

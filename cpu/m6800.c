@@ -67,7 +67,7 @@ TODO:
 #define LOG(x)
 #endif
 
-#define logerror(...)
+#define logerror(...) ((void)0)
 
 /* CPU subtypes, needed for extra insn after TAP/CLI/SEI */
 enum {
@@ -452,6 +452,7 @@ static const UINT8 cycles_63701[] =
 	/*F*/  4, 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5
 };
 
+#if (HAS_NSC8105)
 static const UINT8 cycles_nsc8105[] =
 {
 		/* 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F */
@@ -472,6 +473,7 @@ static const UINT8 cycles_nsc8105[] =
 	/*E*/  5, 5, 5, 0, 5, 5, 5, 6, 5, 5, 5, 5, 0, 6, 0, 7,
 	/*F*/  4, 4, 4, 0, 4, 4, 4, 5, 4, 4, 4, 4, 4, 5, 0, 6
 };
+#endif
 
 INLINE UINT32 RM16( UINT32 Addr )
 {
@@ -702,8 +704,6 @@ void m6800_set_irq_line(int irqline, int state)
 	}
 	else
 	{
-		int eddge;
-
 		if (m6800.irq_state[irqline] == state) return;
 //		printf("M6800#%d set_irq_line %d,%d\n", 1, irqline, state);
 		m6800.irq_state[irqline] = state;
@@ -714,7 +714,6 @@ void m6800_set_irq_line(int irqline, int state)
 			if (state == CLEAR_LINE) return;
 			break;
 		case M6800_TIN_LINE:
-			eddge = (state == CLEAR_LINE ) ? 2 : 0;
 			if( ((m6800.tcsr&TCSR_IEDG) ^ (state==CLEAR_LINE ? TCSR_IEDG : 0))==0 )
 				return;
 			/* active edge in */
@@ -2489,7 +2488,9 @@ WRITE_HANDLER( m6803_internal_registers_w )
 						| (m6800_readport(M6803_PORT2) & (m6800.port2_ddr ^ 0xff)));
 
 				if (m6800.port2_ddr & 2)
+				{
 					logerror("CPU #%d PC %04x: warning - port 2 bit 1 set as output (OLVL) - not supported\n",cpu_getactivecpu(),activecpu_get_pc());
+				}
 			}
 			break;
 		case 0x02:

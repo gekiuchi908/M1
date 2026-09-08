@@ -68,7 +68,8 @@ MD5Update(struct MD5Context *ctx, md5byte const *buf, unsigned len)
 	/* Update byte count */
 
 	t = ctx->bytes[0];
-	if ((ctx->bytes[0] = t + len) < t)
+	ctx->bytes[0] = t + len;
+	if (ctx->bytes[0] < t)
 		ctx->bytes[1]++;	/* Carry from low to high */
 
 	t = 64 - (t & 0x3f);	/* Space available in ctx->in (at least 1) */
@@ -129,7 +130,7 @@ MD5Final(md5byte digest[16], struct MD5Context *ctx)
 
 	byteSwap(ctx->buf, 4);
 	memcpy(digest, ctx->buf, 16);
-	memset(ctx, 0, sizeof(ctx));	/* In case it's sensitive */
+	memset(ctx, 0, sizeof(*ctx));	/* In case it's sensitive */
 }
 
 #ifndef ASM_MD5

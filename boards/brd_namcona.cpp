@@ -251,7 +251,7 @@ static void NA_Init(long srate)
 }
 
 /* For the nice games that have lookup tables for each song... */
-static const struct _entry_
+static const struct
 {
 	UINT32 samp_addr;
 	UINT32 data_addr;

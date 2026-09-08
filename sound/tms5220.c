@@ -401,7 +401,7 @@ tryagain:
         if (u[0] > 511)
             buffer[buf_count] = 127<<8;
         else if (u[0] < -512)
-            buffer[buf_count] = -128<<8;
+            buffer[buf_count] = -(128<<8);
         else
             buffer[buf_count] = u[0] << 6;
 

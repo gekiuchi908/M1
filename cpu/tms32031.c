@@ -290,6 +290,7 @@ static void double_to_dsp(double val, union genreg *result)
 **	EXECEPTION HANDLING
 **#################################################################################################*/
 
+#if 0
 INLINE void generate_exception(int exception)
 {
 }
@@ -298,6 +299,7 @@ INLINE void generate_exception(int exception)
 INLINE void invalid_instruction(UINT32 op)
 {
 }
+#endif
 
 
 
@@ -821,6 +823,7 @@ static UINT32 boot_loader(UINT32 boot_rom_addr)
 	control = RMEM(boot_rom_addr++) & datamask;
 	for (i = 1; i < advance; i++)
 		control |= (RMEM(boot_rom_addr++) & datamask) << (bits * i);
+	(void)control;
 
 	/* now parse the data */
 	while (1)

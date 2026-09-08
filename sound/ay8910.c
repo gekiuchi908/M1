@@ -10,6 +10,7 @@
 
 ***************************************************************************/
 
+#include <math.h>
 #include "driver.h"
 #include "ay8910.h"
 
@@ -68,7 +69,7 @@ static struct AY8910 AYPSG[MAX_8910];		/* array of PSG's */
 
 
 
-void _AYWriteReg(int n, int r, int v)
+static void internal_AYWriteReg(int n, int r, int v)
 {
 	struct AY8910 *PSG = &AYPSG[n];
 	int old;
@@ -259,7 +260,7 @@ void AYWriteReg(int chip, int r, int v)
 		}
 	}
 
-	_AYWriteReg(chip,r,v);
+	internal_AYWriteReg(chip,r,v);
 }
 
 
@@ -646,7 +647,7 @@ void AY8910_set_clock(int chip,int clock)
 	/* at the given sample rate. No. of events = sample rate / (clock/8).    */
 	/* STEP is a multiplier used to turn the fraction into a fixed point     */
 	/* number.                                                               */
-	PSG->UpdateStep = ((double)STEP * PSG->SampleRate * 8 + clock/2) / clock;
+	PSG->UpdateStep = ((double)STEP * PSG->SampleRate * 8 + (double)clock / 2.0) / clock;
 }
 
 
@@ -675,7 +676,7 @@ static void build_mixer_table(int chip)
 	out = MAX_OUTPUT;
 	for (i = 31;i > 0;i--)
 	{
-		PSG->VolTable[i] = out + 0.5;	/* round to nearest */
+		PSG->VolTable[i] = (int)lround(out);	/* round to nearest */
 
 		out /= 1.188502227;	/* = 10 ^ (1.5/20) = 1.5dB */
 	}
@@ -697,7 +698,7 @@ void AY8910_reset(int chip)
 	PSG->OutputN = 0xff;
 	PSG->lastEnable = -1;	/* force a write */
 	for (i = 0;i < AY_PORTA;i++)
-		_AYWriteReg(chip,i,0);	/* AYWriteReg() uses the timer system; we cannot */
+		internal_AYWriteReg(chip,i,0);	/* AYWriteReg() uses the timer system; we cannot */
 								/* call it at this time because the timer system */
 								/* has not been initialized. */
 }

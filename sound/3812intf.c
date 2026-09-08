@@ -69,7 +69,7 @@ int YM3812_sh_start(const struct MachineSound *msound)
 		rate = intf_3812->baseclock/72;
 
 	/* Timer state clear */
-	memset(Timer_3812,0,sizeof(Timer_3812));
+	memset((void *)Timer_3812,0,sizeof(Timer_3812));
 
 	/* stream system initialize */
 	if ( YM3812Init(intf_3812->num,intf_3812->baseclock,rate) != 0)
@@ -190,7 +190,7 @@ int YM3526_sh_start(const struct MachineSound *msound)
 		rate = intf_3526->baseclock/72;
 
 	/* Timer state clear */
-	memset(Timer_3526,0,sizeof(Timer_3526));
+	memset((void *)Timer_3526,0,sizeof(Timer_3526));
 
 	/* stream system initialize */
 	if ( YM3526Init(intf_3526->num,intf_3526->baseclock,rate) != 0)
@@ -324,7 +324,7 @@ int Y8950_sh_start(const struct MachineSound *msound)
 
 
 	/* Timer state clear */
-	memset(Timer_8950,0,sizeof(Timer_8950));
+	memset((void *)Timer_8950,0,sizeof(Timer_8950));
 
 	/* stream system initialize */
 	if ( Y8950Init(intf_8950->num,intf_8950->baseclock,rate) != 0)

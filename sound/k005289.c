@@ -106,7 +106,7 @@ static void K005289_update(int ch, INT16 *buffer, int length)
 		{
 			int offs;
 
-			c+=(long)((((float)mclock / (float)(f * 16))*(float)(1<<FREQBASEBITS)) / (float)(rate / 32));
+			c+=(long)((((float)mclock / (float)(f * 16))*(float)(1<<FREQBASEBITS)) / ((float)rate / 32.0F));
 			offs = (c >> 16) & 0x1f;
 			*mix++ += ((w[offs] & 0x0f) - 8) * v;
 		}
@@ -129,7 +129,7 @@ static void K005289_update(int ch, INT16 *buffer, int length)
 		{
 			int offs;
 
-			c+=(long)((((float)mclock / (float)(f * 16))*(float)(1<<FREQBASEBITS)) / (float)(rate / 32));
+			c+=(long)((((float)mclock / (float)(f * 16))*(float)(1<<FREQBASEBITS)) / ((float)rate / 32.0F));
 			offs = (c >> 16) & 0x1f;
 			*mix++ += ((w[offs] & 0x0f) - 8) * v;
 		}
@@ -156,7 +156,8 @@ int K005289_sh_start(const struct MachineSound *msound)
 	rate = Machine->sample_rate;
 
 	/* allocate a pair of buffers to mix into - 1 second's worth should be more than enough */
-	if ((mixer_buffer = malloc(2 * sizeof(short) * Machine->sample_rate)) == 0)
+	mixer_buffer = malloc(2 * sizeof(short) * Machine->sample_rate);
+	if (mixer_buffer == NULL)
 		return 1;
 
 	/* build the mixer table */

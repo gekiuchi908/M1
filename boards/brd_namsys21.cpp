@@ -88,7 +88,7 @@ static unsigned int S21_Read(unsigned int address)
 		return C140_r(address&0xfff);
 	}
 
-	if (address >= 0x7000 && address <= 0x7fff)	// shared ram
+	if (address >= 0x7000 && address <= 0x77ff)	// shared ram
 	{
 //		printf("read shared %x (PC=%x)\n", address - 0x7000, m6809_get_reg(REG_PC));
 
@@ -101,7 +101,7 @@ static unsigned int S21_Read(unsigned int address)
 		return workram[0x10000 + address - 0x7000];
 	}
 
-	if (address >= 0x7800 && address <= 0x77ff)	// shared ram mirror
+	if (address >= 0x7800 && address <= 0x7fff)	// shared ram mirror
 	{
 		return workram[0x10000 + address - 0x7800];
 	}

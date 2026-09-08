@@ -161,7 +161,8 @@ int flower_sh_start(const struct MachineSound *msound)
 	stream = stream_init(mono_name,100/*intf->volume*/, samplerate, 0, flower_update_mono);
 
 	/* allocate a pair of buffers to mix into - 1 second's worth should be more than enough */
-	if ((mixer_buffer = malloc(2 * sizeof(short) * samplerate)) == 0)
+	mixer_buffer = malloc(2 * sizeof(short) * samplerate);
+	if (mixer_buffer == NULL)
 		return 1;
 	mixer_buffer_2 = mixer_buffer + samplerate;
 

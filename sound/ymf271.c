@@ -333,19 +333,19 @@ INLINE void calculate_step(YMF271Slot *slot)
 		// LFO phase modulation
 		st *= slot->lfo_phasemod;
 		
-		st /= (double)(524288/65536);		// pre-multiply with 65536
+		st /= (524288.0 / 65536.0);		// pre-multiply with 65536
 	
 		slot->step = (UINT64)st / (UINT64)Machine->sample_rate;
 	}
 	else						// internal waveform (FM)
 	{
-		st = (double)(2 * slot->fns) * pow_table[slot->block] * (double)(CLOCK/384);
+		st = (double)(2 * slot->fns) * pow_table[slot->block] * ((double)CLOCK / 384.0);
 		st = st * multiple_table[slot->multiple] * (double)(SIN_LEN);
 		
 		// LFO phase modulation
 		st *= slot->lfo_phasemod;
 		
-		st /= (double)(536870912/65536);	// pre-multiply with 65536
+		st /= (536870912.0 / 65536.0);	// pre-multiply with 65536
 		
 		slot->step = (UINT64)st / (UINT64)Machine->sample_rate;
 	}
@@ -498,7 +498,7 @@ static void update_pcm(YMF271Chip *chip, int slotnum, INT32 *mixp, int length)
 	int i;
 	int final_volume;
 	INT16 sample;
-	INT64 ch0_vol, ch1_vol, ch2_vol, ch3_vol;
+	INT64 ch0_vol, ch1_vol;
 	const UINT8 *rombase;
 
 	YMF271Slot *slot = &chip->slots[slotnum];
@@ -535,8 +535,6 @@ static void update_pcm(YMF271Chip *chip, int slotnum, INT32 *mixp, int length)
 
 		ch0_vol = ((UINT64)final_volume * (UINT64)channel_attenuation[slot->ch0_level]) >> 16;
 		ch1_vol = ((UINT64)final_volume * (UINT64)channel_attenuation[slot->ch1_level]) >> 16;
-		ch2_vol = ((UINT64)final_volume * (UINT64)channel_attenuation[slot->ch2_level]) >> 16;
-		ch3_vol = ((UINT64)final_volume * (UINT64)channel_attenuation[slot->ch3_level]) >> 16;
 
 		if (ch0_vol > 65536) ch0_vol = 65536;
 		if (ch1_vol > 65536) ch1_vol = 65536;
@@ -1193,14 +1191,9 @@ static void write_register(YMF271Chip *chip, int slotnum, int reg, int data)
 static void ymf271_write_fm(YMF271Chip *chip, int grp, int adr, int data)
 {
 	int reg;
-	int slotnum;
 	int slot_group;
 	int sync_mode, sync_reg;
-	YMF271Slot *slot;
 
-	slotnum = 12*grp;
-	slotnum += fm_tab[adr & 0xf];
-	slot = &chip->slots[slotnum];
 	slot_group = fm_tab[adr & 0xf];
 
 	reg = (adr >> 4) & 0xf;
@@ -1585,7 +1578,7 @@ static void init_tables(void)
 		// Waveform 0: sin(wt)    (0 <= wt <= 2PI)
 		wavetable[0][i] = (INT16)(m * MAXOUT);
 
-		// Waveform 1: sin²(wt)   (0 <= wt <= PI)     -sin²(wt)  (PI <= wt <= 2PI)
+		// Waveform 1: sin^2(wt)   (0 <= wt <= PI)     -sin^2(wt)  (PI <= wt <= 2PI)
 		wavetable[1][i] = (i < (SIN_LEN/2)) ? (INT16)((m * m) * MAXOUT) : (INT16)((m * m) * MINOUT);
 
 		// Waveform 2: sin(wt)    (0 <= wt <= PI)     -sin(wt)   (PI <= wt <= 2PI)
@@ -1613,12 +1606,12 @@ static void init_tables(void)
 		// LFO phase modulation
 		plfo[0] = 0;
 
-		fsaw_wave = ((i % (LFO_LENGTH/2)) * PLFO_MAX) / (double)((LFO_LENGTH/2)-1);
+		fsaw_wave = ((i % (LFO_LENGTH/2)) * PLFO_MAX) / ((double)LFO_LENGTH / 2.0 - 1.0);
 		plfo[1] = (i < (LFO_LENGTH/2)) ? fsaw_wave : fsaw_wave - PLFO_MAX;
 
 		plfo[2] = (i < (LFO_LENGTH/2)) ? PLFO_MAX : PLFO_MIN;
 
-		ftri_wave = ((i % (LFO_LENGTH/4)) * PLFO_MAX) / (double)(LFO_LENGTH/4);
+		ftri_wave = ((i % (LFO_LENGTH/4)) * PLFO_MAX) / ((double)LFO_LENGTH / 4.0);
 		switch (i / (LFO_LENGTH/4))
 		{
 			case 0: plfo[3] = ftri_wave; break;
@@ -1674,9 +1667,6 @@ int YMF271_sh_start( const struct MachineSound *msound )
 	int  vol[2];
 	struct YMF271interface *intf;
 	int i;
-	YMF271Chip *chip;
-
-	chip = &YMF271[0];
 
 	intf = msound->sound_interface;
 

@@ -22,11 +22,11 @@ static void FT_Q(FILTWK *p,long rate,long cutoff,double boost)
 #ifndef IIR_FILTER
 	//(CUTOFF*2)<=rate
 
-	if((fc*2)>fs)	fc=fs/2;		//cutoff freq‚limitting
+	if((fc*2)>fs)	fc=fs/2;		//cutoff freq limitting
 	total *= boost;
 	for(i=0;i<FILT_TAPS;i++)
 	{
-		r=(2*PI*fc/fs)*((double)i-(double)(FILT_TAPS/2));
+		r=(2*PI*fc/fs)*((double)i-((double)FILT_TAPS/2.0));
 		if(r==0)
 		{
 			p->q[i]=(long)(2.0*total*fc/fs);

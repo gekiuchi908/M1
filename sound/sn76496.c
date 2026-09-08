@@ -255,7 +255,7 @@ static void SN76496_set_gain(int chip,int gain)
 	gain &= 0xff;
 
 	/* increase max output basing on gain (0.2 dB per step) */
-	out = MAX_OUTPUT / 3;
+	out = (double)MAX_OUTPUT / 3.0;
 	while (gain-- > 0)
 		out *= 1.023292992;	/* = (10 ^ (0.2/20)) */
 
@@ -263,7 +263,7 @@ static void SN76496_set_gain(int chip,int gain)
 	for (i = 0;i < 15;i++)
 	{
 		/* limit volume to avoid clipping */
-		if (out > MAX_OUTPUT / 3) R->VolTable[i] = MAX_OUTPUT / 3;
+		if (out > (double)MAX_OUTPUT / 3.0) R->VolTable[i] = (double)MAX_OUTPUT / 3.0;
 		else R->VolTable[i] = out;
 
 		out /= 1.258925412;	/* = 10 ^ (2/20) = 2dB */

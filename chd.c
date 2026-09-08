@@ -256,11 +256,13 @@ INLINE void extract_old_map_entry(const UINT8 *base, struct map_entry *entry, UI
 #endif
 }
 
+#if 0
 INLINE void assemble_old_map_entry(UINT8 *base, struct map_entry *entry)
 {
 	UINT64 data = entry->offset | ((UINT64)entry->length << 44);
 	put_bigendian_uint64(&base[0], data);
 }
+#endif
 
 
 
@@ -532,15 +534,15 @@ struct chd_file *chd_open(const char *filename, int writeable, struct chd_file *
 	if (parent)
 	{
 		/* check MD5 if it isn't empty */
-		if (memcmp(nullmd5, chd.header.parentmd5, sizeof(chd.header.parentmd5)) && 
-			memcmp(nullmd5, chd.parent->header.md5, sizeof(chd.parent->header.md5)) && 
-			memcmp(chd.parent->header.md5, chd.header.parentmd5, sizeof(chd.header.parentmd5)))
+		if (memcmp(nullmd5, chd.header.parentmd5, sizeof(chd.header.parentmd5)) != 0 && 
+			memcmp(nullmd5, chd.parent->header.md5, sizeof(chd.parent->header.md5)) != 0 && 
+			memcmp(chd.parent->header.md5, chd.header.parentmd5, sizeof(chd.header.parentmd5)) != 0)
 			SET_ERROR_AND_CLEANUP(CHDERR_INVALID_PARENT);
 
 		/* check SHA1 if it isn't empty */
-		if (memcmp(nullsha1, chd.header.parentsha1, sizeof(chd.header.parentsha1)) && 
-			memcmp(nullsha1, chd.parent->header.sha1, sizeof(chd.parent->header.sha1)) && 
-			memcmp(chd.parent->header.sha1, chd.header.parentsha1, sizeof(chd.header.parentsha1)))
+		if (memcmp(nullsha1, chd.header.parentsha1, sizeof(chd.header.parentsha1)) != 0 && 
+			memcmp(nullsha1, chd.parent->header.sha1, sizeof(chd.parent->header.sha1)) != 0 && 
+			memcmp(chd.parent->header.sha1, chd.header.parentsha1, sizeof(chd.header.parentsha1)) != 0)
 			SET_ERROR_AND_CLEANUP(CHDERR_INVALID_PARENT);
 	}
 
@@ -1202,7 +1204,7 @@ int chd_compress_ex(struct chd_file *chd, const char *rawfile, UINT64 offset,
 	clock_t lastupdate;
 	int err;
 	UINT64 sourcefileoffset = 0;
-	int hunk, blksread = 0;
+	int hunk;
 
 	/* punt if no interface */
 	if (!interface.open)
@@ -1239,7 +1241,6 @@ int chd_compress_ex(struct chd_file *chd, const char *rawfile, UINT64 offset,
 			   because we already zero out the hunk beforehand above, no special processing
 			   need take place here.
 			*/
-			blksread++;
 			sourcefileoffset += bytesread;
 		}
 
@@ -1878,7 +1879,7 @@ static int read_hunk_map(struct chd_file *chd)
 
 	/* verify the cookie */
 	count = multi_read(chd->file, fileoffset, entrysize, &cookie);
-	if (count != entrysize || memcmp(&cookie, END_OF_LIST_COOKIE, entrysize))
+	if (count != entrysize || memcmp(&cookie, END_OF_LIST_COOKIE, entrysize) != 0)
 	{
 		err = CHDERR_INVALID_FILE;
 		goto cleanup;
@@ -1919,7 +1920,7 @@ static void init_crcmap(struct chd_file *chd, int prepopulate)
 		return;
 	
 	/* allocate a CRC map table */
-	chd->crctable = malloc(CRCMAP_HASH_SIZE * sizeof(chd->crctable[0]));
+	chd->crctable = (struct crcmap_entry **)malloc(CRCMAP_HASH_SIZE * sizeof(chd->crctable[0]));
 	if (!chd->crctable)
 	{
 		free(chd->crcmap);
@@ -1935,7 +1936,7 @@ static void init_crcmap(struct chd_file *chd, int prepopulate)
 	}
 	
 	/* initialize the table */
-	memset(chd->crctable, 0, CRCMAP_HASH_SIZE * sizeof(chd->crctable[0]));
+	memset((void *)chd->crctable, 0, CRCMAP_HASH_SIZE * sizeof(chd->crctable[0]));
 	
 	/* if we're to prepopulate, go for it */
 	if (prepopulate)

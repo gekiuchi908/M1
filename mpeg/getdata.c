@@ -99,7 +99,7 @@ int j,k;
 		}
 	} else { /* ID==0 */
 		int index=0,index2,spooky_index;
-		int slen[6],nr_of_sfb[6]; /* actually, there's four of each, not five, labelled 1 through 4, but
+		int slen[6] = {0}, nr_of_sfb[6]; /* actually, there's four of each, not five, labelled 1 through 4, but
 					   * what's a word of storage compared to one's sanity. so [0] is irellevant.
 					   */
 

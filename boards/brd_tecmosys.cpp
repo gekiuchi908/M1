@@ -54,9 +54,7 @@ static WRITE_HANDLER( deroon_bankswitch_w )
 
 static WRITE_HANDLER( deroon_okibank_w )
 {
-	int bank;
-
-	bank = (data & 0x10) ? 0 : 0x40000;
+	// int bank = (data & 0x10) ? 0 : 0x40000;
 
 	OKIM6295_set_bank_base(0, 0x00000);
 }

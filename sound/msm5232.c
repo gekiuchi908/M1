@@ -483,7 +483,8 @@ INLINE void EG_voices_advance(MSM5232 *chip)
 				{
 					int n = -voi->counter / samplerate + 1;
 					voi->counter += n * samplerate;
-					if ( (voi->eg += n) > VMAX )
+					voi->eg += n;
+					if ( voi->eg > VMAX )
 						voi->eg = VMAX;
 				}
 			}
@@ -516,7 +517,8 @@ INLINE void EG_voices_advance(MSM5232 *chip)
 				{
 					int n = -voi->counter / samplerate + 1;
 					voi->counter += n * samplerate;
-					if ( (voi->eg -= n) < VMIN )
+					voi->eg -= n;
+					if ( voi->eg < VMIN )
 						voi->eg = VMIN;
 				}
 			}
@@ -539,7 +541,8 @@ INLINE void EG_voices_advance(MSM5232 *chip)
 				{
 					int n = -voi->counter / samplerate + 1;
 					voi->counter += n * samplerate;
-					if ( (voi->eg -= n) < VMIN )
+					voi->eg -= n;
+					if ( voi->eg < VMIN )
 						voi->eg = VMIN;
 				}
 			}

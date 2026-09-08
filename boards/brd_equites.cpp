@@ -113,7 +113,8 @@ static void synth_callback(int ref)
 {
 	static int parity = 0;
 
-	if (parity^=1)
+	parity ^= 1;
+	if (parity)
 	{
 		cpu_set_irq_line(0, I8085_INTR_LINE, ASSERT_LINE);
 		cpu_set_irq_line(0, I8085_INTR_LINE, CLEAR_LINE);

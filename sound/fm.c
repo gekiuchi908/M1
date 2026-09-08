@@ -1380,7 +1380,7 @@ static void advance_eg_channel(FM_OPN *OPN, FM_SLOT *SLOT)
 				if ( !(OPN->eg_cnt & ((1<<SLOT->eg_sh_rr)-1) ) )
 				{
 					/* SSG-EG affects Release phase also (Nemesis) */
-					if ((SLOT->ssg&0x08) && ((OPN->type = TYPE_YM2612) || (OPN->type = TYPE_YM2608)))
+					if ((SLOT->ssg&0x08) && ((OPN->type == TYPE_YM2612) || (OPN->type == TYPE_YM2608)))
 					{
 						SLOT->volume += 6 * eg_inc[SLOT->eg_sel_rr + ((OPN->eg_cnt>>SLOT->eg_sh_rr)&7)];
 					}
@@ -2456,7 +2456,8 @@ int YM2203Init(int num, int clock, int rate,
 	YM2203NumChips = num;
 
 	/* allocate ym2203 state space */
-	if( (FM2203 = (YM2203 *)malloc(sizeof(YM2203) * YM2203NumChips))==NULL)
+	FM2203 = (YM2203 *)malloc(sizeof(YM2203) * YM2203NumChips);
+	if (FM2203 == NULL)
 		return (-1);
 	/* clear */
 	memset(FM2203,0,sizeof(YM2203) * YM2203NumChips);
@@ -3710,7 +3711,8 @@ int YM2608Init(int num, int clock, int rate,
 	YM2608NumChips = num;
 
 	/* allocate extend state space */
-	if( (FM2608 = (YM2608 *)malloc(sizeof(YM2608) * YM2608NumChips))==NULL)
+	FM2608 = (YM2608 *)malloc(sizeof(YM2608) * YM2608NumChips);
+	if (FM2608 == NULL)
 		return (-1);
 	/* clear */
 	memset(FM2608,0,sizeof(YM2608) * YM2608NumChips);
@@ -4417,7 +4419,8 @@ int YM2610Init(int num, int clock, int rate,
 	YM2610NumChips = num;
 
 	/* allocate extend state space */
-	if( (FM2610 = (YM2610 *)malloc(sizeof(YM2610) * YM2610NumChips))==NULL)
+	FM2610 = (YM2610 *)malloc(sizeof(YM2610) * YM2610NumChips);
+	if (FM2610 == NULL)
 		return (-1);
 	/* clear */
 	memset(FM2610,0,sizeof(YM2610) * YM2610NumChips);
@@ -4931,7 +4934,8 @@ int YM2612Init(int num, int clock, int rate, FM_TIMERHANDLER TimerHandler,FM_IRQ
 	YM2612NumChips = num;
 
 	/* allocate extend state space */
-	if( (FM2612 = (YM2612 *)malloc(sizeof(YM2612) * YM2612NumChips))==NULL)
+	FM2612 = (YM2612 *)malloc(sizeof(YM2612) * YM2612NumChips);
+	if (FM2612 == NULL)
 		return (-1);
 	/* clear */
 	memset(FM2612,0,sizeof(YM2612) * YM2612NumChips);

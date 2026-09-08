@@ -106,7 +106,7 @@ static void rf5c400_update(int num, INT16 **outbuf, int length)
 	INT16 *rom = info->rom;
 	INT32 *buffer[2];
 	INT32 bspace[44100/30], bspace1[44100/30];
-	UINT32 start, end, loop;
+	UINT32 end, loop;
 	UINT64 pos;
 	UINT8 vol, lvol, rvol, type;
 	UINT8 env_phase;
@@ -124,7 +124,6 @@ static void rf5c400_update(int num, INT16 **outbuf, int length)
 		INT32 *buf0 = buffer[0];
 		INT32 *buf1 = buffer[1];
 
-		start = ((channel->startH & 0xFF00) << 8) | channel->startL;
 		end = ((channel->endHloopH & 0xFF) << 16) | channel->endL;
 		loop = ((channel->endHloopH & 0xFF00) << 8) | channel->loopL;
 		pos = channel->pos;

@@ -378,7 +378,7 @@ static void WRITE_EA_64(int ea, UINT64 data)
 
 fp_reg READ_EA_FPE(int ea)
 {
-	fp_reg r;
+	fp_reg r ={0};
 	int mode = (ea >> 3) & 0x7;
 	int reg = (ea & 0x7);
 

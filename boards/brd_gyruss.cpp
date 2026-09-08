@@ -6,7 +6,7 @@
 #define AY_CLOCK (14318180/8)
 #define I8039_CLOCK (8000000/15)	// 8 mhz crystal
 
-#define TIMER_RATE TIME_IN_HZ(Z80_CLOCK/1024.0) // around 3500 Hz...
+#define TIMER_RATE TIME_IN_HZ((double)Z80_CLOCK/1024.0) // around 3500 Hz...
 
 static void GY_Init(long srate);
 static void GY_SendCmd(int cmda, int cmdb);

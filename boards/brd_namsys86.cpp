@@ -68,7 +68,8 @@ static int rt_decode_sample(void)
 	size = sizeof( struct GameSamples ) + n * sizeof( struct GameSamples * );
 
 	/* allocate */
-	if ( ( Machine->samples = (GameSamples *)malloc( size ) ) == NULL )
+	Machine->samples = (GameSamples *)malloc( size );
+	if ( Machine->samples == NULL )
 		return 1;
 
 	samples = Machine->samples;
@@ -129,7 +130,8 @@ static int rt_decode_sample(void)
 		}
 
 		/* allocate sample */
-		if ( ( samples->sample[n] = (GameSample *)malloc( sizeof( struct GameSample ) + size * 2 * sizeof( unsigned char ) ) ) == NULL )
+		samples->sample[n] = (GameSample *)malloc( sizeof( struct GameSample ) + size * 2 * sizeof( unsigned char ) );
+		if ( samples->sample[n] == NULL )
 			return 1;
 
 		/* fill up the sample info */

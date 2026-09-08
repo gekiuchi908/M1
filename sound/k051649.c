@@ -102,7 +102,7 @@ static void K051649_update(int ch, INT16 *buffer, int length)
 
 				/* Amuse source:  Cab suggests this method gives greater resolution */
 				/* Sean Young 20010417: the formula is really: f = clock/(16*(f+1))*/
-				c+=(long)((((float)mclock / (float)((f+1) * 16))*(float)(1<<FREQBASEBITS)) / (float)(rate / 32));
+				c+=(long)((((float)mclock / (float)((f+1) * 16))*(float)(1<<FREQBASEBITS)) / ((float)rate / 32.0F));
 				offs = (c >> 16) & 0x1f;
 				*mix++ += (w[offs] * v)>>3;
 			}
@@ -131,7 +131,8 @@ int K051649_sh_start(const struct MachineSound *msound)
 	rate = Machine->sample_rate;
 
 	/* allocate a buffer to mix into - 1 second's worth should be more than enough */
-	if ((mixer_buffer = malloc(2 * sizeof(short) * Machine->sample_rate)) == 0)
+	mixer_buffer = malloc(2 * sizeof(short) * Machine->sample_rate);
+	if (mixer_buffer == NULL)
 		return 1;
 
 	/* build the mixer table */

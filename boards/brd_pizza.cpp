@@ -160,7 +160,8 @@ static void adsp_tx_callback(int port, INT32 data)
 			dmadac_enable(0, SOUND_CHANNELS, 1);
 
 			/* fire off a timer wich will hit every half-buffer */
-			timer_adjust(adsp_autobuffer_timer, TIME_IN_HZ(sample_rate) * (adsp_size / (SOUND_CHANNELS * adsp_incs)), 0, TIME_IN_HZ(sample_rate) * (adsp_size / (SOUND_CHANNELS * adsp_incs)));
+			double period = TIME_IN_HZ(sample_rate) * ((double)adsp_size / (double)(SOUND_CHANNELS * adsp_incs));
+			timer_adjust(adsp_autobuffer_timer, period, 0, period);
 
 			return;
 		}

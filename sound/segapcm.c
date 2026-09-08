@@ -75,7 +75,7 @@ int SEGAPCM_sh_start( const struct MachineSound *msound )
 		return 1;
 
 	for(i=0; i<256; i++)
-		spcm.step[i] = i*spcm.rate*(double)(65536/128) / Machine->sample_rate;
+		spcm.step[i] = i*spcm.rate*(65536.0 / 128.0) / Machine->sample_rate;
 
 	memset(spcm.ram, 0xff, 0x800);
 

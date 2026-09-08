@@ -81,6 +81,7 @@ static WRITE8_HANDLER( glad_pcm_latch_w )
 	pcm_latch = data;
 }
 
+#if 0
 static READ8_HANDLER( glad_pcm_latch_r )
 {
 	return pcm_latch;
@@ -102,6 +103,7 @@ static WRITE8_HANDLER( glad_adpcm_w )
 	MSM5205_reset_w(0,(data>>5)&1); /* bit 5    */
 	MSM5205_vclk_w (0,(data>>4)&1); /* bit4     */
 }
+#endif
 
 static PORT_READ_START( glad_sound_readport )
 	{ 0x00, 0x00, YM2203_status_port_0_r },
@@ -127,6 +129,7 @@ static MEMORY_WRITE_START( glad_sound_writemem )
 	{ 0x8000, 0x83ff, MWA_RAM },
 MEMORY_END
 
+#if 0
 static MEMORY_READ_START( glad_readmem_pcm )
 	{ 0x2000, 0x2fff, glad_pcm_latch_r },
 	{ 0x4000, 0xffff, glad_pcm_rom_r },
@@ -135,6 +138,7 @@ MEMORY_END
 static MEMORY_WRITE_START( glad_writemem_pcm )
 	{ 0x1000, 0x1fff, glad_adpcm_w },
 MEMORY_END
+#endif
 
 static void GYM_IRQHandler(int irq)
 {

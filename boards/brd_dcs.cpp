@@ -1194,7 +1194,7 @@ static void sound_tx_callback(int port, INT32 data)
 			sample_rate /= 16;
 
 			/* fire off a timer wich will hit every half-buffer */
-			dcs.reg_timer = timer_pulse(TIME_IN_HZ(sample_rate) * (dcs.size / (2 * dcs.incs)), 0, dcs_irq);
+			dcs.reg_timer = timer_pulse(TIME_IN_HZ(sample_rate) * ((double)dcs.size / (double)(2 * dcs.incs)), 0, dcs_irq);
 //			dcs.reg_timer = timer_pulse(TIME_IN_HZ(sample_rate) * (dcs.size / (4 * dcs.incs)), 0, dcs_irq);
 
 			/* configure the DAC generator */

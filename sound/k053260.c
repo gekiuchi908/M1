@@ -230,7 +230,7 @@ int K053260_sh_start(const struct MachineSound *msound) {
 
 		/* setup SH1 timer if necessary */
 		if ( intf->irq[ics] )
-			timer_pulse( TIME_IN_HZ( ( intf->clock[ics] / 32 ) ), 0, intf->irq[ics] );
+			timer_pulse( TIME_IN_HZ( ( (double)intf->clock[ics] / 32.0 ) ), 0, intf->irq[ics] );
 	}
 
     return 0;

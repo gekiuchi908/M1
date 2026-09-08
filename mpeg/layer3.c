@@ -181,8 +181,8 @@ int mean_frame_size,bitrate,fs,hsize,ssize;
 		/* polyphase filterbank
 		*/
 			/* if (nch == 2) this was a bug, tomislav */
-			        for (i=0;i<18;i++)
-				        poly(ch,i);
+			for (i=0;i<18;i++)
+				poly(ch,i);
 		}
 
 		printout();

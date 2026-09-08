@@ -119,7 +119,7 @@ M1_BOARD_END
 
 static void BuggyBoy_Init(long foo)
 {
-	periodic_timer = timer_pulse(TIME_IN_HZ(BB_Z80_CLK / 4 / 2048), 0, timer_callback);
+	periodic_timer = timer_pulse(TIME_IN_HZ((double)BB_Z80_CLK / 4.0 / 2048.0), 0, timer_callback);
 }
 
 static void delayed_w(int data)

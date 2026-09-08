@@ -294,7 +294,7 @@ void MSM5205_playmode_w(int num,int select)
 		/* timer set */
 		if( prescaler )
 		{
-			double period = TIME_IN_HZ(msm5205_intf->baseclock / prescaler);
+			double period = TIME_IN_HZ((double)msm5205_intf->baseclock / (double)prescaler);
 			voice->timer = timer_add(1, period, MSM5205_vclk_callback, num);
 		}
 		else

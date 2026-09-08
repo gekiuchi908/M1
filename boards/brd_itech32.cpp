@@ -2,7 +2,7 @@
 
 #include "m1snd.h"
 
-#define CLOCK_8MHz (8000000)
+#define CLOCK_8MHz (8000000.0)
 #define M6809_CLOCK (4000000)
 #define ES5506_CLOCK (16000000)
 

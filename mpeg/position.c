@@ -35,7 +35,8 @@ struct AUDIO_HEADER tmp;
 			else hsize=21;
 		}
                 if (tmp.protection_bit==0) hsize+=2;
-		if ((g=dummy_getinfo(hsize)))  /* dummy_getinfo: reads hsize-4 bytes */
+		g = dummy_getinfo(hsize);
+		if (g)  /* dummy_getinfo: reads hsize-4 bytes */
 			switch (g) {
                         case GETHDR_EOF: return cnt;
 			case GETHDR_ERR:
@@ -48,7 +49,8 @@ struct AUDIO_HEADER tmp;
 	        else mean_frame_size=72000*bitrate/fs;
 		fillbfr(mean_frame_size + tmp.padding_bit - hsize);
 
-		if ((g=gethdr(&tmp))) 
+		g = gethdr(&tmp);
+		if (g) 
 			switch (g) {
 			case GETHDR_EOF: return cnt;
 			case GETHDR_ERR:

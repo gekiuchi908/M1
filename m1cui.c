@@ -410,7 +410,7 @@ static int m1ui_message(void *this, int message, char *txt, int iparm)
 	return 0;
 }
 
-static void _usage(char *appname)
+static void usage(char *appname)
 {
 	printf("\nM1 usage:\n");
 	printf("%s [-a] [-b] [-i] [-l] [-n] [-r] [-t] [-w] gamename\n", appname);
@@ -587,7 +587,7 @@ int main(int argc, char *argv[])
 					sr = strtoul(&argv[i][2], &eptr, 0);
 					if ((sr < 8000) || (sr > 48000))
 					{
-						_usage(argv[0]);
+						usage(argv[0]);
 						return(0);
 					}
 					m1snd_shutdown();
@@ -601,7 +601,7 @@ int main(int argc, char *argv[])
 					lnxdrv_apimode = strtoul(&argv[i][2], &eptr, 0);
 					if ((lnxdrv_apimode < 0) || (lnxdrv_apimode > 3))
 					{
-						_usage(argv[0]);
+						usage(argv[0]);
 						return(0);
 					}
 				
@@ -615,7 +615,7 @@ int main(int argc, char *argv[])
 					sr = strtoul(&argv[i][2], &eptr, 0);
 					if ((sr < 0) || (sr > 100))
 					{
-						_usage(argv[0]);
+						usage(argv[0]);
 						return(0);
 					}
 					m1snd_setoption(M1_OPT_STEREOMIX, sr);
@@ -642,7 +642,7 @@ int main(int argc, char *argv[])
 					sr = strtoul(&argv[i][2], &eptr, 0);
 					if ((sr < 0) || (sr > 9000))
 					{
-						_usage(argv[0]);
+						usage(argv[0]);
 						return(0);
 					}
 					m1snd_setoption(M1_OPT_FIXEDVOLUME, sr);
@@ -719,7 +719,7 @@ int main(int argc, char *argv[])
 				case 'h':
 				case 'H':
 				case '?':
-					_usage(argv[0]);
+					usage(argv[0]);
 					return(0);
 					break;
 
@@ -787,7 +787,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		_usage(argv[0]);
+		usage(argv[0]);
 		m1snd_shutdown();
 		free(rompath);
 		free(wavpath);

@@ -98,7 +98,12 @@ static void startElement(void *userData, const char *name, const char **atts)
 		numgames++;
 
 		// (re)size the gamelist to fit the new number of games
-		games = (M1GameT *)realloc(games, sizeof(M1GameT)*numgames);
+		M1GameT *new_games = (M1GameT *)realloc(games, sizeof(M1GameT)*numgames);
+		if (new_games == NULL)
+		{
+			return;
+		}
+		games = new_games;
 
 		// zero out the newly allocated entry
 		memset(&games[curgame], 0, sizeof(M1GameT));

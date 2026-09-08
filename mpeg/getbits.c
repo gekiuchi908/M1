@@ -226,7 +226,8 @@ struct AUDIO_HEADER tmp;
 	/* TODO: add a simple byte counter to check only first, say, 1024
 	 * bytes for a new header and then return GETHDR_SYN
 	 */
-	if ((retval=_fillbfr(4))!=0) return retval;
+	retval = _fillbfr(4);
+	if (retval != 0) return retval;
 
 	for(;;) {
 		while ((s=_getbits(12)) != 0xfff) {
@@ -234,12 +235,14 @@ struct AUDIO_HEADER tmp;
 				parse_header(&tmp);
 				if (header_sanity_check(&tmp)==0) return GETHDR_NS;
 			}
-			if ((retval=readsync())!=0) return retval;
+			retval = readsync();
+			if (retval != 0) return retval;
 		}
 	
 		parse_header(&tmp);
 		if (header_sanity_check(&tmp)!=0) {
-			if ((retval=readsync())!=0) return retval;
+			retval = readsync();
+			if (retval != 0) return retval;
 		} else break;
 	}
 

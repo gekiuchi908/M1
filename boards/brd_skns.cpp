@@ -859,10 +859,8 @@ void play_sample(int lflag, int cmda)
 
 static void skns_irq(int state)
 {
-	int foo;
-	
 	// reading status clears the IRQ state
-	foo = YMZ280B_status_0_r(0);
+	(void)YMZ280B_status_0_r(0);
 
 	if (state)
 	{

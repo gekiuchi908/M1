@@ -1680,7 +1680,7 @@ static void OPLLWriteReg(YM2413 *chip, int r, int v)
 			}
 			else
 			{
-				if ((chip->rhythm&0x20)==1)
+				if ((chip->rhythm & 0x20) != 0)
 				/*rhythm on to off*/
 				{
 					logerror("YM2413: Rhythm mode disable\n");

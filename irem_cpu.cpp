@@ -643,6 +643,7 @@ the ones marked with "new" are checked against dynablst and bomberman tables
 
 
 
+#if 0
 const unsigned char test_decryption_table[256] = {
 	xxxx,xxxx,xxxx,xxxx,xxxx,xxxx,xxxx,xxxx, xxxx,xxxx,xxxx,xxxx,xxxx,xxxx,xxxx,xxxx, /* 00 */
 	xxxx,xxxx,xxxx,xxxx,xxxx,xxxx,xxxx,xxxx, xxxx,xxxx,xxxx,xxxx,xxxx,xxxx,xxxx,xxxx, /* 10 */
@@ -680,6 +681,7 @@ static const unsigned char byte_count_table[256] = {
 	0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, /* E0 */
 	0,0,0,0,0,0,0,0, 1,1,1,1,1,1,0,0, /* F0 */
 };
+#endif
 
 void irem_cpu_decrypt(int cpu,const unsigned char *decryption_table)
 {

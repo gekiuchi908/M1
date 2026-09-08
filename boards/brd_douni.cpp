@@ -99,12 +99,12 @@ static MEMORY_WRITE_START( dorunrun_writemem2 )
 	{ 0xe000, 0xe008, docastle_shared0_w },
 MEMORY_END
 
-static void _timer(int refcon)
+static void douni_timer(int refcon)
 {
 	cpu_set_irq_line(0, 0, ASSERT_LINE);
 	cpu_set_irq_line(0, 0, CLEAR_LINE);
 
-	timer_set(1.0/480.0, 0, _timer);
+	timer_set(1.0/480.0, 0, douni_timer);
 }
 
 static void DRR_Init(long srate)
@@ -119,7 +119,7 @@ static void DRR_Init(long srate)
 	buffer1[7] = 0x00;
 	buffer1[8] = 0x3f;
 
-	timer_set(1.0/480.0, 0, _timer);
+	timer_set(1.0/480.0, 0, douni_timer);
 }
 
 M1_BOARD_START( dorunrun )
