@@ -31,6 +31,9 @@
 
 
 #include "m1snd.h"
+#include "sound/es5506.h"
+#include "sound/es5510.h"
+#include <cmath>
 
 #define M68K_CLOCK (16000000)
 
@@ -56,10 +59,99 @@ static TimerT *timer_68681=(TimerT *)NULL;
 static int timer_mode,m68681_imr;
 static int counter,imr_status;
 static int vector_reg;
-static data16_t es5510_dsp_ram[0x200];
-static data32_t	es5510_gpr[0xc0];
-static data32_t	es5510_gpr_latch;
-static int es_tmp=1;
+
+static ES5510 es5510;
+static bool esp_halted = true;
+static uint8_t duart_opr = 0;
+
+static uint8_t mb87078_control = 0;
+static uint8_t mb87078_data = 0;
+static uint16_t mb87078_channel_latch[4] = { 0x7f, 0x7f, 0x7f, 0x7f };
+static float mb87078_gain[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+static void mb87078_recalc()
+{
+	for (int i = 0; i < 4; i++)
+	{
+		if (~mb87078_channel_latch[i] & 0x40)
+		{
+			mb87078_gain[i] = 0.0f;
+		}
+		else if (mb87078_channel_latch[i] & 0x100)
+		{
+			mb87078_gain[i] = 0.02511886f; // -32dB
+		}
+		else if (mb87078_channel_latch[i] & 0x80)
+		{
+			mb87078_gain[i] = 1.0f; // 0dB
+		}
+		else
+		{
+			int index = ~mb87078_channel_latch[i] & 0x3f;
+			mb87078_gain[i] = (float)pow(10.0, -(index * 0.5) / 20.0);
+		}
+	}
+}
+
+static void mb87078_write(uint32_t offset, uint8_t data)
+{
+	if (offset & 1)
+	{
+		mb87078_control = data & 0x1f;
+	}
+	else
+	{
+		mb87078_data = data & 0x3f;
+		mb87078_channel_latch[mb87078_control & 3] = ((mb87078_control << 4) & 0x1c0) | mb87078_data;
+		mb87078_recalc();
+	}
+}
+
+static void f3_update_esphalt()
+{
+	bool halted = ((duart_opr ^ 0xff) & 0x40) != 0;
+	if (halted != esp_halted)
+	{
+		esp_halted = halted;
+		es5510.set_halt(esp_halted);
+	}
+}
+
+static void f3_pump_callback(int chip,
+	INT32 ch0_l, INT32 ch0_r,
+	INT32 ch1_l, INT32 ch1_r,
+	INT32 ch2_l, INT32 ch2_r,
+	INT32 ch3_l, INT32 ch3_r,
+	INT32 *out_l, INT32 *out_r)
+{
+	auto clamp16 = [](INT32 val) -> int16_t {
+		INT32 v = val >> 4;
+		if (v > 32767) return 32767;
+		if (v < -32768) return -32768;
+		return (int16_t)v;
+	};
+
+	es5510.ser_w(0, clamp16(ch1_l)); // FX1 L
+	es5510.ser_w(1, clamp16(ch1_r)); // FX1 R
+	es5510.ser_w(2, clamp16(ch2_l)); // FX2 L
+	es5510.ser_w(3, clamp16(ch2_r)); // FX2 R
+	es5510.ser_w(4, clamp16(ch3_l)); // DRY L
+	es5510.ser_w(5, clamp16(ch3_r)); // DRY R
+
+	if (!esp_halted)
+	{
+		es5510.run_once();
+	}
+
+	int16_t wet_l = es5510.ser_r(6);
+	int16_t wet_r = es5510.ser_r(7);
+
+	INT32 esp_l = ((INT32)wet_l) << 4;
+	INT32 esp_r = ((INT32)wet_r) << 4;
+
+	*out_l = (INT32)((esp_l + ch0_l) * 0.5f * mb87078_gain[2]);
+	*out_r = (INT32)((esp_r + ch0_r) * 0.5f * mb87078_gain[3]);
+}
 
 #define M68681_CLOCK	2000000 /* Actually X1, not the main clock */
 
@@ -145,8 +237,6 @@ static READ16_HANDLER(f3_68681_r)
 
 static WRITE16_HANDLER(f3_68681_w)
 {
-//	if (offset != 0xa || data != 0x8)
-//		printf("write 68681: offset %x data %x mask %x PC=%x\n", offset, data, mem_mask, m68k_get_reg(NULL, M68K_REG_PC));
 	switch (offset) {
 		case 0x04: /* ACR */
 			switch ((data>>4)&7) {
@@ -201,8 +291,13 @@ static WRITE16_HANDLER(f3_68681_w)
 		case 0x0c: /* IVR (Interrupt vector) */
 			vector_reg=data&0xff;
 			break;
-		case 0x0f:	// written when dying
-//			logerror("68681:  %02x %02x (PC=%x)\n",offset,data&0xff, m68k_get_reg(NULL, M68K_REG_PC));
+		case 0x0e: /* Set Output Port Bits */
+			duart_opr |= (data & 0xff);
+			f3_update_esphalt();
+			break;
+		case 0x0f: /* Reset Output Port Bits */
+			duart_opr &= ~(data & 0xff);
+			f3_update_esphalt();
 			break;
 		default:
 //			logerror("68681:  %02x %02x\n",offset,data&0xff);
@@ -212,67 +307,12 @@ static WRITE16_HANDLER(f3_68681_w)
 
 READ16_HANDLER(es5510_dsp_r)
 {
-//	logerror("%06x: DSP read offset %04x (data is %04x)\n",activecpu_get_pc(),offset,es5510_dsp_ram[offset]);
-//	if (es_tmp) return es5510_dsp_ram[offset];
-/*
-	switch (offset) {
-		case 0x00: return (es5510_gpr_latch>>16)&0xff;
-		case 0x01: return (es5510_gpr_latch>> 8)&0xff;
-		case 0x02: return (es5510_gpr_latch>> 0)&0xff;
-		case 0x03: return 0;
-	}
-*/
-//	offset<<=1;
-
-//if (offset<7 && es5510_dsp_ram[0]!=0xff) return rand()%0xffff;
-
-	if (offset==0x12) return 0;
-
-//	if (offset>4)
-	if (offset==0x16) return 0x27;
-
-	return es5510_dsp_ram[offset];
+	return es5510.host_r(offset & 0xff);
 }
 
 WRITE16_HANDLER(es5510_dsp_w)
 {
-	UINT8 *snd_mem = (UINT8 *)memory_region(REGION_SOUND1);
-
-//	if (offset>4 && offset!=0x80  && offset!=0xa0  && offset!=0xc0  && offset!=0xe0)
-//		logerror("%06x: DSP write offset %04x %04x\n",activecpu_get_pc(),offset,data);
-
-	COMBINE_DATA(&es5510_dsp_ram[offset]);
-
-	switch (offset) {
-		case 0x00: es5510_gpr_latch=(es5510_gpr_latch&0x00ffff)|((data&0xff)<<16); break;
-		case 0x01: es5510_gpr_latch=(es5510_gpr_latch&0xff00ff)|((data&0xff)<< 8); break;
-		case 0x02: es5510_gpr_latch=(es5510_gpr_latch&0xffff00)|((data&0xff)<< 0); break;
-		case 0x03: break;
-
-		case 0x80: /* Read select - GPR + INSTR */
-	//		logerror("ES5510:  Read GPR/INSTR %06x (%06x)\n",data,es5510_gpr[data]);
-
-			/* Check if a GPR is selected */
-			if (data<0xc0) {
-				es_tmp=0;
-				es5510_gpr_latch=es5510_gpr[data];
-			} else es_tmp=1;
-			break;
-
-		case 0xa0: /* Write select - GPR */
-	//		logerror("ES5510:  Write GPR %06x %06x (0x%04x:=0x%06x\n",data,es5510_gpr_latch,data,snd_mem[es5510_gpr_latch>>8]);
-			if (data<0xc0)
-				es5510_gpr[data]=snd_mem[es5510_gpr_latch>>8];
-			break;
-
-		case 0xc0: /* Write select - INSTR */
-	//		logerror("ES5510:  Write INSTR %06x %06x\n",data,es5510_gpr_latch);
-			break;
-
-		case 0xe0: /* Write select - GPR + INSTR */
-	//		logerror("ES5510:  Write GPR/INSTR %06x %06x\n",data,es5510_gpr_latch);
-			break;
-	}
+	es5510.host_w(offset & 0xff, data & 0xff);
 }
 
 static unsigned int f3_read_memory_8(unsigned int address)
@@ -302,15 +342,15 @@ static unsigned int f3_read_memory_8(unsigned int address)
 		return 0;
 	}
 
-	if (address >= 0x260000 && address < 0x26ffff)
+	if (address >= 0x260000 && address <= 0x26ffff)
 	{
 		if (address & 1)
 		{
-			return es5510_dsp_r((address&0xffff)/2, 0xff00);
+			return es5510.host_r(((address & 0x1ff) / 2) & 0xff);
 		}
 		else
 		{
-			return es5510_dsp_r((address&0xffff)/2, 0x00ff)>>8;
+			return 0;
 		}
 	}
 
@@ -352,6 +392,11 @@ static unsigned int f3_read_memory_16(unsigned int address)
 	if (address >= 0x200000 && address <= 0x200460)
 	{
 		return ES5505_data_0_r((address&0xfff)/2, 0);
+	}
+
+	if (address >= 0x260000 && address <= 0x26ffff)
+	{
+		return es5510.host_r(((address & 0x1ff) / 2) & 0xff);
 	}
 
 	if (address >= 0x280000 && address <= 0x28ffff)
@@ -415,11 +460,7 @@ static void f3_write_memory_8(unsigned int address, unsigned int data)
 	{
 		if (address & 1)
 		{
-			es5510_dsp_w((address&0xffff)/2, data&0xff, 0xff00);		
-		}
-		else
-		{
-			es5510_dsp_w((address&0xffff)/2, data<<8, 0x00ff);		
+			es5510.host_w(((address & 0x1ff) / 2) & 0xff, data & 0xff);
 		}
 		return;
 	}
@@ -452,7 +493,11 @@ static void f3_write_memory_8(unsigned int address, unsigned int data)
 
 	if (address >= 0x340000 && address <= 0x340003)
 	{
-		return;	// write to volume control
+		if (!(address & 1))
+		{
+			mb87078_write(((address - 0x340000) / 2) ^ 1, data & 0xff);
+		}
+		return;
 	}
 
 	printf("Unmapped write 8 %x to %x\n", data, address);
@@ -480,9 +525,21 @@ static void f3_write_memory_16(unsigned int address, unsigned int data)
 		return;
 	}
 
+	if (address >= 0x260000 && address <= 0x26ffff)
+	{
+		es5510.host_w(((address & 0x1ff) / 2) & 0xff, data & 0xff);
+		return;
+	}
+
 	if (address >= 0x280000 && address <= 0x28ffff)
 	{
 		f3_68681_w((address&0xffff)/2, data, 0);
+		return;
+	}
+
+	if (address >= 0x340000 && address <= 0x340003)
+	{
+		mb87078_write(((address - 0x340000) / 2) ^ 1, (data >> 8) & 0xff);
 		return;
 	}
 
@@ -505,14 +562,8 @@ static void f3_write_memory_32(unsigned int address, unsigned int data)
 		return;
 	}
 
-	if (address >= 0x200000 && address <= 0x20ffff)
-	{
-		f3_write_memory_16(address, data>>16);
-		f3_write_memory_16(address+2, data&0xffff);
-		return;
-	}
-
-	printf("Unk W32 @ %x\n", address);
+	f3_write_memory_16(address, data >> 16);
+	f3_write_memory_16(address + 2, data & 0xffff);
 }
 
 static int f3_irq_callback(int int_level)
@@ -546,6 +597,19 @@ static void F3_Init(long srate)
 	commram[0x7fb] = 0x30;
 							  
 	addr = 0;
+
+	es5510.reset();
+	esp_halted = true;
+	es5510.set_halt(true);
+	duart_opr = 0;
+
+	mb87078_control = 0;
+	mb87078_data = 0;
+	for (int i = 0; i < 4; i++)
+		mb87078_channel_latch[i] = 0x7f;
+	mb87078_recalc();
+
+	ES5505_set_pump_callback(0, f3_pump_callback);
 }
 
 static void f3_write_byte(int byte)
@@ -693,12 +757,11 @@ void ExtCodeCase5(UINT8 *s)
 
 void FetchCode(int type, int _code)
 {
-	UINT8 *tbl, *src, job;
+	UINT8 *src, job;
 	UINT16 code;
 	int tbladr, adrofs;
 
 	code = _code & 0xffff;
-	tbl = &prgrom2[Machine->refcon];
 	adrofs = Machine->refcon + (code << 2);
 	tbladr = prgrom2[adrofs]<<24 | prgrom2[adrofs+1]<<16 | prgrom2[adrofs+2]<<8 | prgrom2[adrofs+3];
 

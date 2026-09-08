@@ -3,24 +3,35 @@
 #
 
 CC   = gcc
-CPP  = g++
-CFLAGS = -c -O3 -g3 -fno-strict-aliasing -fPIC -Wno-unused-but-set-variable
-CFLAGS += -DSOUND_OUTPUT=1 -DHAS_YM2612=1 -DHAS_YM3438=1 -DHAS_YM2203=1 -DHAS_YM2610=1 -DHAS_YM2610B=1 -DINLINE="static __inline__"
-CFLAGS += -DHAS_YM3812=1 -DHAS_YM3526=1 -DHAS_M65C02=1 -DLSB_FIRST=1 -DHAS_M6803=1 -DHAS_M6808=1 -DHAS_ADSP2105=1
-CFLAGS += -DHAS_ES5505=1 -DHAS_ES5506=1 -DHAS_K005289=1 -DHAS_SN76496=1 -DHAS_K007232=1 -DHAS_NAMCO=1
-CFLAGS += -DHAS_CEM3394=1 -DHAS_YMZ280B=1 -DHAS_AY8910=1 -DHAS_DAC=1 -DHAS_SEGAPCM=1 -DHAS_OKIM6295=1
-CFLAGS += -DHAS_TMS5220=1 -DHAS_ADPCM=1 -DHAS_K051649=1 -DHAS_YM2151_ALT=1 -DHAS_RF5C68=1
-CFLAGS += -DHAS_QSOUND=1 -DHAS_K054539=1 -DHAS_UPD7759=1 -DHAS_MULTIPCM=1 -DHAS_YMF278B=1 -DHAS_MSM5232=1
-CFLAGS += -DHAS_K053260=1 -DHAS_POKEY=1 -DHAS_HC55516=1 -DHAS_IREMGA20=1 -DHAS_MSM5205=1 -DHAS_C140=1
-CFLAGS += -DHAS_BSMT2000=1 -DHAS_HD63701=1 -DHAS_CUSTOM=1 -DHAS_ADSP2100=1 -DHAS_ADSP2101=1 -DHAS_ADSP2115=1
-CFLAGS += -DHAS_YMF262=1 -DHAS_YM2413=1 -DHAS_YM2608=1 -DHAS_VLM5030=1 -DHAS_MPEG=1 -DHAS_N7751=1
-CFLAGS += -DHAS_PIC16C54=1 -DHAS_PIC16C55=1 -DHAS_PIC16C56=1 -DHAS_PIC16C57=1 -DHAS_PIC16C58=1
-CFLAGS += -DHAS_C352=1 -DHAS_YMF271=1 -DHAS_SCSP=1 -DHAS_Y8950=1 -DHAS_ADSP2104=1 -DPATHSEP="/" 
+CXX  = g++
+
+# C/C++ 共通のプリプロセッサフラグ
+CPPFLAGS += -DSOUND_OUTPUT=1 -DHAS_YM2612=1 -DHAS_YM3438=1 -DHAS_YM2203=1 -DHAS_YM2610=1 -DHAS_YM2610B=1 -DINLINE="static __inline__"
+CPPFLAGS += -DHAS_YM3812=1 -DHAS_YM3526=1 -DHAS_M65C02=1 -DLSB_FIRST=1 -DHAS_M6803=1 -DHAS_M6808=1 -DHAS_ADSP2105=1
+CPPFLAGS += -DHAS_ES5505=1 -DHAS_ES5506=1 -DHAS_K005289=1 -DHAS_SN76496=1 -DHAS_K007232=1 -DHAS_NAMCO=1
+CPPFLAGS += -DHAS_CEM3394=1 -DHAS_YMZ280B=1 -DHAS_AY8910=1 -DHAS_DAC=1 -DHAS_SEGAPCM=1 -DHAS_OKIM6295=1
+CPPFLAGS += -DHAS_TMS5220=1 -DHAS_ADPCM=1 -DHAS_K051649=1 -DHAS_YM2151_ALT=1 -DHAS_RF5C68=1
+CPPFLAGS += -DHAS_QSOUND=1 -DHAS_K054539=1 -DHAS_UPD7759=1 -DHAS_MULTIPCM=1 -DHAS_YMF278B=1 -DHAS_MSM5232=1
+CPPFLAGS += -DHAS_K053260=1 -DHAS_POKEY=1 -DHAS_HC55516=1 -DHAS_IREMGA20=1 -DHAS_MSM5205=1 -DHAS_C140=1
+CPPFLAGS += -DHAS_BSMT2000=1 -DHAS_HD63701=1 -DHAS_CUSTOM=1 -DHAS_ADSP2100=1 -DHAS_ADSP2101=1 -DHAS_ADSP2115=1
+CPPFLAGS += -DHAS_YMF262=1 -DHAS_YM2413=1 -DHAS_YM2608=1 -DHAS_VLM5030=1 -DHAS_MPEG=1 -DHAS_N7751=1
+CPPFLAGS += -DHAS_PIC16C54=1 -DHAS_PIC16C55=1 -DHAS_PIC16C56=1 -DHAS_PIC16C57=1 -DHAS_PIC16C58=1
+CPPFLAGS += -DHAS_C352=1 -DHAS_YMF271=1 -DHAS_SCSP=1 -DHAS_Y8950=1 -DHAS_ADSP2104=1 -DPATHSEP="/"
 #-DPTR64
 # non-"core" defines
-CFLAGS += -DPS2=0 -DM1=1 -DUNIX=1 -DNDEBUG=1
-CFLAGS += -I. -I.. -Icpu -I../cpu -Isound -I../sound -Iboards -I../boards -Impeg -I../mpeg -Iexpat -I../expat -Wall -Izlib -I../zlib
-CFLAGS += `pkg-config --cflags libpulse` `sdl-config --cflags`
+CPPFLAGS += -DPS2=0 -DM1=1 -DUNIX=1 -DNDEBUG=1
+CPPFLAGS += -I. -I.. -Icpu -I../cpu -Isound -I../sound -Iboards -I../boards -Impeg -I../mpeg -Iexpat -I../expat -Izlib -I../zlib
+CPPFLAGS += `pkg-config --cflags libpulse` `sdl-config --cflags`
+
+# C/C++ 共通のコンパイラ警告・最適化フラグ
+COMMON_FLAGS := -Wall -c -O3 -g3 -fno-strict-aliasing -fPIC -Wno-unused-but-set-variable
+
+# C専用フラグ（ここに C専用警告を追加）
+CFLAGS   += $(COMMON_FLAGS) -Wno-old-style-definition -std=c11
+
+# C++専用フラグ
+CXXFLAGS += $(COMMON_FLAGS) -std=c++17
+
 EXE  = m1
 LIBS = -lasound `pkg-config --libs libpulse` `sdl-config --libs`                                                                            
 
@@ -98,7 +109,7 @@ OBJS += sound/bsmt2000.o sound/k005289.o sound/sn76496.o sound/namco.o sound/cem
 OBJS += sound/ymz280b.o sound/2203intf.o sound/2610intf.o sound/2612intf.o sound/3812intf.o
 OBJS += sound/k051649.o sound/2151intf.o sound/flower.o sound/ym2413.o sound/2413intf.o
 OBJS += sound/2608intf.o sound/vlm5030.o sound/262intf.o sound/ymf262.o sound/c352.o sound/ymf271.o
-OBJS += sound/dmadac.o sound/rf5c400.o sound/msm5232.o
+OBJS += sound/dmadac.o sound/rf5c400.o sound/msm5232.o sound/es5510.o
 
 # CPU cores
 OBJS += cpu/m68kcpu.o cpu/m68kops.o
@@ -112,11 +123,11 @@ SRCS = $(foreach obj,$(OBJS) $(CUIOBJS),$(firstword $(wildcard $(obj:.o=.cpp) $(
 
 %.o: %.c
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) $< -o $@
+	@$(CC) $(CPPFLAGS) $(CFLAGS) $< -o $@
 
 %.o: %.cpp
 	@echo Compiling $<
-	@$(CPP) $(CFLAGS) $< -o $@
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< -o $@
 	
 all: $(EXE)
 
@@ -126,12 +137,12 @@ lib$(EXE).a: $(OBJS)
 
 lib$(EXE).so: $(OBJS)
 	@echo Linking library
-	@$(CPP) -shared -o lib$(EXE).so $(OBJS)
+	@$(CXX) -shared -o lib$(EXE).so $(OBJS)
 
 # link the commandline exe
 $(EXE): $(CUIOBJS) $(OBJS)
 	@echo Linking $(EXE)
-	@$(CPP) -g -o $(EXE) $(CUIOBJS) $(OBJS) -L. $(LIBS)
+	@$(CXX) -g -o $(EXE) $(CUIOBJS) $(OBJS) -L. $(LIBS)
 
 depend:
 	makedepend -- $(CFLAGS) -- $(SRCS)

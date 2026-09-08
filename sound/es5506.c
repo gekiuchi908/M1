@@ -145,10 +145,16 @@ struct ES5506Chip
 static struct ES5506Chip es5506[MAX_ES5506];
 static INT32 *accumulator;
 static INT32 *scratch;
+static INT32 *chan_scratch[8];
+static es5505_pump_callback s_pump_callback[MAX_ES5506];
 
 static INT16 *ulaw_lookup;
 static UINT16 *volume_lookup;
+static UINT16 *volume_lookup_5505;
 static UINT32 accum_mask;
+
+#define GET_VOL_L(voice) ((accum_mask == 0x7fffffff && volume_lookup_5505) ? volume_lookup_5505[(voice)->lvol >> 8] : volume_lookup[(voice)->lvol >> 4])
+#define GET_VOL_R(voice) ((accum_mask == 0x7fffffff && volume_lookup_5505) ? volume_lookup_5505[(voice)->rvol >> 8] : volume_lookup[(voice)->rvol >> 4])
 
 static FILE *eslog;
 
@@ -222,13 +228,27 @@ static int compute_tables(void)
 	if (!volume_lookup)
 		return 0;
 
-	/* generate ulaw lookup table */
+	/* generate volume lookup table */
 	for (i = 0; i < 4096; i++)
 	{
 		UINT8 exponent = i >> 8;
 		UINT32 mantissa = (i & 0xff) | 0x100;
 
 		volume_lookup[i] = (mantissa << 11) >> (20 - exponent);
+	}
+
+	/* allocate ES5505 volume lookup table (4-bit exponent, 4-bit mantissa) */
+	if (!volume_lookup_5505)
+		volume_lookup_5505 = malloc(sizeof(volume_lookup_5505[0]) * 256);
+	if (volume_lookup_5505)
+	{
+		for (i = 0; i < 256; i++)
+		{
+			UINT8 exponent = (i >> 4) & 0x0f;
+			UINT32 mantissa = (i & 0x0f) | 0x10;
+
+			volume_lookup_5505[i] = (mantissa << 11) >> (16 - exponent);
+		}
 	}
 
 	return 1;
@@ -587,8 +607,8 @@ static void generate_ulaw(struct ES5506Voice *voice, UINT16 *base, INT32 *lbuffe
 {
 	UINT32 freqcount = voice->freqcount;
 	UINT32 accum = voice->accum & accum_mask;
-	INT32 lvol = volume_lookup[voice->lvol >> 4];
-	INT32 rvol = volume_lookup[voice->rvol >> 4];
+	INT32 lvol = GET_VOL_L(voice);
+	INT32 rvol = GET_VOL_R(voice);
 
 	/* pre-add the bank offset */
 	base += voice->exbank;
@@ -622,8 +642,8 @@ reverse:
 				if (voice->ecount != 0)
 				{
 					update_envelopes(voice, 1);
-					lvol = volume_lookup[voice->lvol >> 4];
-					rvol = volume_lookup[voice->rvol >> 4];
+					lvol = GET_VOL_L(voice);
+					rvol = GET_VOL_R(voice);
 				}
 
 				/* apply volumes and add */
@@ -660,8 +680,8 @@ reverse:
 				if (voice->ecount != 0)
 				{
 					update_envelopes(voice, 1);
-					lvol = volume_lookup[voice->lvol >> 4];
-					rvol = volume_lookup[voice->rvol >> 4];
+					lvol = GET_VOL_L(voice);
+					rvol = GET_VOL_R(voice);
 				}
 
 				/* apply volumes and add */
@@ -693,8 +713,8 @@ static void generate_pcm(struct ES5506Voice *voice, UINT16 *base, INT32 *lbuffer
 {
 	UINT32 freqcount = voice->freqcount;
 	UINT32 accum = voice->accum & accum_mask;
-	INT32 lvol = volume_lookup[voice->lvol >> 4];
-	INT32 rvol = volume_lookup[voice->rvol >> 4];
+	INT32 lvol = GET_VOL_L(voice);
+	INT32 rvol = GET_VOL_R(voice);
 
 	/* pre-add the bank offset */
 	base += voice->exbank;
@@ -724,8 +744,8 @@ reverse:
 				if (voice->ecount != 0)
 				{
 					update_envelopes(voice, 1);
-					lvol = volume_lookup[voice->lvol >> 4];
-					rvol = volume_lookup[voice->rvol >> 4];
+					lvol = GET_VOL_L(voice);
+					rvol = GET_VOL_R(voice);
 				}
 
 				/* apply volumes and add */
@@ -758,8 +778,8 @@ reverse:
 				if (voice->ecount != 0)
 				{
 					update_envelopes(voice, 1);
-					lvol = volume_lookup[voice->lvol >> 4];
-					rvol = volume_lookup[voice->rvol >> 4];
+					lvol = GET_VOL_L(voice);
+					rvol = GET_VOL_R(voice);
 				}
 
 				/* apply volumes and add */
@@ -790,52 +810,101 @@ alldone:
 static void generate_samples(struct ES5506Chip *chip, INT32 *left, INT32 *right, int samples)
 {
 	int v;
+	int chip_idx = (int)(chip - es5506);
+	es5505_pump_callback pump_cb = (chip_idx >= 0 && chip_idx < MAX_ES5506) ? s_pump_callback[chip_idx] : NULL;
 
 	/* skip if nothing to do */
 	if (!samples)
 		return;
 
-	/* clear out the accumulator */
-	memset(left, 0, samples * sizeof(left[0]));
-	memset(right, 0, samples * sizeof(right[0]));
-
-	/* loop over voices */
-	for (v = 0; v <= chip->active_voices; v++)
+	if (!pump_cb || !chan_scratch[0])
 	{
-		struct ES5506Voice *voice = &chip->voice[v];
-		UINT16 *base = chip->region_base[voice->control >> 14];
+		/* clear out the accumulator */
+		memset(left, 0, samples * sizeof(left[0]));
+		memset(right, 0, samples * sizeof(right[0]));
 
-		/* special case: if end == start, stop the voice (ES5506 only) */
-		if (accum_mask != 0x7fffffff && voice->start == voice->end)
-			voice->control |= CONTROL_STOP0;
-
-		/* generate from the appropriate source */
-		if (!base)
+		/* loop over voices */
+		for (v = 0; v <= chip->active_voices; v++)
 		{
-//			logerror("NULL region base %d\n",voice->control >> 14);
-			generate_dummy(voice, base, left, right, samples);
-		}
-		else if (voice->control & 0x2000)
-			generate_ulaw(voice, base, left, right, samples);
-		else
-			generate_pcm(voice, base, left, right, samples);
+			struct ES5506Voice *voice = &chip->voice[v];
+			UINT16 *base = chip->region_base[voice->control >> 14];
 
-		/* does this voice have it's IRQ bit raised? */
-		if (voice->control&CONTROL_IRQ) 
-		{
-logerror("IRQ raised on voice %d!!\n",v);
-			/* only update voice vector if existing IRQ is acked by host */
-			if (chip->irqv&0x80)
+			/* special case: if end == start, stop the voice (ES5506 only) */
+			if (accum_mask != 0x7fffffff && voice->start == voice->end)
+				voice->control |= CONTROL_STOP0;
+
+			/* generate from the appropriate source */
+			if (!base)
 			{
-				/* latch voice number into vector, and set high bit low */
-				chip->irqv=v&0x7f;
-
-				/* take down IRQ bit on voice */
-				voice->control&=~CONTROL_IRQ;
-
-				/* inform host of irq */
-				update_irq_state(chip);
+				generate_dummy(voice, base, left, right, samples);
 			}
+			else if (voice->control & 0x2000)
+				generate_ulaw(voice, base, left, right, samples);
+			else
+				generate_pcm(voice, base, left, right, samples);
+
+			/* does this voice have it's IRQ bit raised? */
+			if (voice->control & CONTROL_IRQ)
+			{
+				if (chip->irqv & 0x80)
+				{
+					chip->irqv = v & 0x7f;
+					voice->control &= ~CONTROL_IRQ;
+					update_irq_state(chip);
+				}
+			}
+		}
+	}
+	else
+	{
+		int c, s;
+		for (c = 0; c < 8; c++)
+			memset(chan_scratch[c], 0, samples * sizeof(chan_scratch[0][0]));
+
+		/* loop over voices */
+		for (v = 0; v <= chip->active_voices; v++)
+		{
+			struct ES5506Voice *voice = &chip->voice[v];
+			UINT16 *base = chip->region_base[voice->control >> 14];
+			int chan = (voice->control & (CONTROL_CA0 | CONTROL_CA1)) >> 10;
+			if (chan > 3) chan = 3;
+
+			INT32 *v_left = chan_scratch[chan * 2];
+			INT32 *v_right = chan_scratch[chan * 2 + 1];
+
+			/* special case: if end == start, stop the voice (ES5506 only) */
+			if (accum_mask != 0x7fffffff && voice->start == voice->end)
+				voice->control |= CONTROL_STOP0;
+
+			/* generate from the appropriate source */
+			if (!base)
+				generate_dummy(voice, base, v_left, v_right, samples);
+			else if (voice->control & 0x2000)
+				generate_ulaw(voice, base, v_left, v_right, samples);
+			else
+				generate_pcm(voice, base, v_left, v_right, samples);
+
+			/* does this voice have it's IRQ bit raised? */
+			if (voice->control & CONTROL_IRQ)
+			{
+				if (chip->irqv & 0x80)
+				{
+					chip->irqv = v & 0x7f;
+					voice->control &= ~CONTROL_IRQ;
+					update_irq_state(chip);
+				}
+			}
+		}
+
+		/* now process through pump callback for each sample */
+		for (s = 0; s < samples; s++)
+		{
+			pump_cb(chip_idx,
+				chan_scratch[0][s], chan_scratch[1][s],
+				chan_scratch[2][s], chan_scratch[3][s],
+				chan_scratch[4][s], chan_scratch[5][s],
+				chan_scratch[6][s], chan_scratch[7][s],
+				&left[s], &right[s]);
 		}
 	}
 }
@@ -1013,6 +1082,11 @@ int ES5506_sh_start(const struct MachineSound *msound)
 	/* allocate memory */
 	accumulator = malloc(sizeof(accumulator[0]) * 2 * MAX_SAMPLE_CHUNK);
 	scratch = malloc(sizeof(scratch[0]) * 2 * MAX_SAMPLE_CHUNK);
+	for (i = 0; i < 8; i++)
+		chan_scratch[i] = malloc(sizeof(chan_scratch[0][0]) * MAX_SAMPLE_CHUNK);
+	for (i = 0; i < MAX_ES5506; i++)
+		s_pump_callback[i] = NULL;
+
 	if (!accumulator || !scratch)
 		return 1;
 
@@ -1030,6 +1104,8 @@ int ES5506_sh_start(const struct MachineSound *msound)
 
 void ES5506_sh_stop(void)
 {
+	int i;
+
 	/* free memory */
 	if (accumulator)
 		free(accumulator);
@@ -1039,6 +1115,13 @@ void ES5506_sh_stop(void)
 		free(scratch);
 	scratch = NULL;
 
+	for (i = 0; i < 8; i++)
+	{
+		if (chan_scratch[i])
+			free(chan_scratch[i]);
+		chan_scratch[i] = NULL;
+	}
+
 	if (ulaw_lookup)
 		free(ulaw_lookup);
 	ulaw_lookup = NULL;
@@ -1046,6 +1129,13 @@ void ES5506_sh_stop(void)
 	if (volume_lookup)
 		free(volume_lookup);
 	volume_lookup = NULL;
+
+	if (volume_lookup_5505)
+		free(volume_lookup_5505);
+	volume_lookup_5505 = NULL;
+
+	for (i = 0; i < MAX_ES5506; i++)
+		s_pump_callback[i] = NULL;
 
 	/* debugging */
 	if (LOG_COMMANDS && eslog)
@@ -1656,8 +1746,8 @@ int ES5505_sh_start(const struct MachineSound *msound)
 	memcpy(es5506intf.region0, intf->region0, sizeof(es5506intf.region0));
 	memcpy(es5506intf.region1, intf->region1, sizeof(es5506intf.region1));
 	memcpy(es5506intf.mixing_level, intf->mixing_level, sizeof(es5506intf.mixing_level));
-	memcpy(es5506intf.irq_callback, intf->irq_callback, sizeof(es5506intf.irq_callback));
-	memcpy(es5506intf.read_port, intf->read_port, sizeof(es5506intf.read_port));
+	memcpy((void *)es5506intf.irq_callback, (const void *)intf->irq_callback, sizeof(es5506intf.irq_callback));
+	memcpy((void *)es5506intf.read_port, (const void *)intf->read_port, sizeof(es5506intf.read_port));
 
 	es5506msound.sound_interface = &es5506intf;
 	es5506msound.sound_type = msound->sound_type;
@@ -1679,6 +1769,12 @@ int ES5505_sh_start(const struct MachineSound *msound)
 void ES5505_sh_stop(void)
 {
 	ES5506_sh_stop();
+}
+
+void ES5505_set_pump_callback(int chip, es5505_pump_callback cb)
+{
+	if (chip >= 0 && chip < MAX_ES5506)
+		s_pump_callback[chip] = cb;
 }
 
 

@@ -29,6 +29,15 @@ READ16_HANDLER( ES5505_data_1_r );
 WRITE16_HANDLER( ES5505_data_0_w );
 WRITE16_HANDLER( ES5505_data_1_w );
 
+typedef void (*es5505_pump_callback)(int chip,
+	INT32 ch0_l, INT32 ch0_r,
+	INT32 ch1_l, INT32 ch1_r,
+	INT32 ch2_l, INT32 ch2_r,
+	INT32 ch3_l, INT32 ch3_r,
+	INT32 *out_l, INT32 *out_r);
+
+void ES5505_set_pump_callback(int chip, es5505_pump_callback cb);
+
 
 
 
