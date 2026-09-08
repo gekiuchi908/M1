@@ -129,7 +129,7 @@ SRCS = $(foreach obj,$(OBJS) $(CUIOBJS),$(firstword $(wildcard $(obj:.o=.cpp) $(
 	@echo Compiling $<
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $< -o $@
 	
-all: $(EXE)
+all: $(EXE) launcher
 
 # make the libraries
 lib$(EXE).a: $(OBJS)
@@ -144,11 +144,43 @@ $(EXE): $(CUIOBJS) $(OBJS)
 	@echo Linking $(EXE)
 	@$(CXX) -g -o $(EXE) $(CUIOBJS) $(OBJS) -L. $(LIBS)
 
+# M1 GUI Launcher
+LAUNCHER_EXE = m1-launcher
+QT_DIR ?= /home/hkiuchi/Qt/6.11.1/gcc_64
+QT_MOC = $(QT_DIR)/libexec/moc
+QT_PKG_PATH = $(QT_DIR)/lib/pkgconfig
+QT_CFLAGS = $(shell PKG_CONFIG_PATH=$(QT_PKG_PATH):$$PKG_CONFIG_PATH pkg-config --cflags Qt6Widgets)
+QT_LIBS   = $(shell PKG_CONFIG_PATH=$(QT_PKG_PATH):$$PKG_CONFIG_PATH pkg-config --libs Qt6Widgets)
+
+LAUNCHER_SRCS = launcher/main.cpp launcher/xml_parser.cpp launcher/game_table_model.cpp \
+                launcher/rom_verifier.cpp launcher/m1_process.cpp launcher/settings_dialog.cpp \
+                launcher/mainwindow.cpp
+LAUNCHER_MOC_HEADERS = launcher/game_table_model.h launcher/rom_verifier.h launcher/m1_process.h \
+                       launcher/settings_dialog.h launcher/mainwindow.h
+LAUNCHER_MOC_SRCS = $(LAUNCHER_MOC_HEADERS:launcher/%.h=launcher/moc_%.cpp)
+LAUNCHER_OBJS = $(LAUNCHER_SRCS:.cpp=.o) $(LAUNCHER_MOC_SRCS:.cpp=.o) \
+                unzip.o $(filter zlib/%,$(OBJS))
+
+launcher/moc_%.cpp: launcher/%.h
+	@echo Running MOC for $<
+	@$(QT_MOC) $< -o $@
+
+launcher/%.o: launcher/%.cpp
+	@echo Compiling Launcher $<
+	@$(CXX) -std=c++17 -Wall -O2 -fPIC -I. -Izlib $(QT_CFLAGS) -c $< -o $@
+
+launcher: $(LAUNCHER_EXE)
+
+$(LAUNCHER_EXE): $(LAUNCHER_OBJS)
+	@echo Linking $(LAUNCHER_EXE)
+	@$(CXX) -g -o $(LAUNCHER_EXE) $(LAUNCHER_OBJS) $(QT_LIBS)
+
 depend:
 	makedepend -- $(CFLAGS) -- $(SRCS)
 
 clean:
-	rm -f lib$(EXE).a $(OBJS) $(CUIOBJS) $(EXE) *.bak cpu/*.bak boards/*.bak sound/*.bak
+	rm -f lib$(EXE).a $(OBJS) $(CUIOBJS) $(EXE) *.bak cpu/*.bak boards/*.bak sound/*.bak \
+	      $(LAUNCHER_EXE) launcher/*.o launcher/moc_*.cpp
 
 # DO NOT DELETE
 
