@@ -40,6 +40,15 @@ static unsigned int ss22_read(unsigned int address)
 		return workram[address];	// 37710 internal RAM
 	}
 
+	if (address >= 0x2000 && address <= 0x2fff)
+	{
+		unsigned int val = c352_0_r((address-0x2000)>>1, 0);
+		if (address & 1)
+			return (val >> 8) & 0xff;
+		else
+			return val & 0xff;
+	}
+
 	if (address >= 0x4000 && address <= 0xbfff)
 	{
 		return workram[address];	// shared RAM
@@ -99,12 +108,20 @@ static unsigned int ss22_read16(unsigned int address)
 			if (is_c7x)
 				return prgrom2[address] | prgrom2[address+1]<<8; 
 			else
-				return prgrom2[address-0xc000] | prgrom2[address-0xc000+1]<<8; 
+			{
+				unsigned int ofs = address - 0xc000;
+				return prgrom2[ofs] | prgrom2[(ofs + 1) & 0x3fff]<<8;
+			}
 	}
 
-	if (address >= 0x200000 && address <= 0x27ffff)
+	if (address >= 0x80000 && address <= 0x100000)
 	{
-		return prgrom[(address & 0x7ffff)] | prgrom[(address & 0x7ffff) + 1]<<8;
+		return prgrom[(address & 0x7ffff)] | prgrom[((address + 1) & 0x7ffff)]<<8;
+	}
+
+	if (address >= 0x200000 && address <= 0x2fffff)
+	{
+		return prgrom[(address & 0x7ffff)] | prgrom[((address + 1) & 0x7ffff)]<<8;
 	}
 	return 0;
 }
@@ -120,6 +137,15 @@ static void ss22_write(unsigned int address, unsigned int data)
 	if (address >= 0x80 && address <= 0x27f)
 	{
 		workram[address] = data & 0xff;
+		return;
+	}
+
+	if (address >= 0x2000 && address <= 0x2fff)
+	{
+		if (address & 1)
+			c352_0_w((address-0x2000)>>1, (data & 0xff) << 8, 0x00ff);
+		else
+			c352_0_w((address-0x2000)>>1, data & 0xff, 0xff00);
 		return;
 	}
 
@@ -253,8 +279,8 @@ static void SS22_SendCmd(int cmda, int cmdb)
 
 	if (is_super || is_c7x)
 	{
-		workram[0x4001] = ((0x40) | (cmda >>8)) & 0xf;
-		workram[0x4000] = cmda;
+		workram[0x4001] = 0x40 | ((cmda >> 8) & 0xf);
+		workram[0x4000] = cmda & 0xff;
 
 		// set all volumes to max
 		workram[0x4022] = 0x3f;
@@ -264,8 +290,8 @@ static void SS22_SendCmd(int cmda, int cmdb)
 	}
 	else
 	{			  
-		workram[0x5001] = (0x40 | (cmda >>8)) & 0xf;
-		workram[0x5000] = cmda;
+		workram[0x5001] = 0x40 | ((cmda >> 8) & 0xf);
+		workram[0x5000] = cmda & 0xff;
 
 		// set all volumes to max
 		workram[0x5022] = 0x3f;

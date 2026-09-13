@@ -226,7 +226,15 @@ static void c352_mix_one_channel(struct c352_info *info, unsigned long ch, long 
 		{
 			info->channel_l2[i] += ((sample * info->c352_ch[ch].vol_l2)>>8);
 		}
-		info->channel_r2[i] += ((sample * info->c352_ch[ch].vol_r2)>>8);
+
+		if ( flag & C352_FLG_PHASEFR )
+		{
+			info->channel_r2[i] += ((-sample * info->c352_ch[ch].vol_r2)>>8);
+		}
+		else
+		{
+			info->channel_r2[i] += ((sample * info->c352_ch[ch].vol_r2)>>8);
+		}
 
 		if ( (flag & C352_FLG_REVERSE) && (flag & C352_FLG_LOOP) )
 		{
@@ -367,13 +375,35 @@ static unsigned short c352_read_reg16(struct c352_info *info, unsigned long addr
 	}
 	else
 	{
-		if ((address & 0xf) == 6)
+		switch (address & 0xf)
 		{
+		case 0x0:
+			val = (info->c352_ch[chan].vol_l << 8) | info->c352_ch[chan].vol_r;
+			break;
+		case 0x2:
+			val = (info->c352_ch[chan].vol_l2 << 8) | info->c352_ch[chan].vol_r2;
+			break;
+		case 0x4:
+			val = info->c352_ch[chan].pitch;
+			break;
+		case 0x6:
 			val = info->c352_ch[chan].flag;
-		}
-		else
-		{
+			break;
+		case 0x8:
+			val = info->c352_ch[chan].bank;
+			break;
+		case 0xa:
+			val = info->c352_ch[chan].start_addr;
+			break;
+		case 0xc:
+			val = info->c352_ch[chan].end_addr;
+			break;
+		case 0xe:
+			val = info->c352_ch[chan].repeat_addr;
+			break;
+		default:
 			val = 0;
+			break;
 		}
 	}
 	return val;
@@ -430,19 +460,19 @@ static void c352_write_reg16(struct c352_info *info, unsigned long address, unsi
 	case 0x0:
 		// volumes (output 1)
 		#if VERBOSE
-		logerror("CH %02d LVOL %02x RVOL %02x\n", chan, val & 0xff, val >> 8);
+		logerror("CH %02d LVOL %02x RVOL %02x\n", chan, val >> 8, val & 0xff);
 		#endif
-		info->c352_ch[chan].vol_l = val & 0xff;
-		info->c352_ch[chan].vol_r = val >> 8;
+		info->c352_ch[chan].vol_l = val >> 8;
+		info->c352_ch[chan].vol_r = val & 0xff;
 		break;
 
 	case 0x2:
 		// volumes (output 2)
 		#if VERBOSE
-		logerror("CH %02d RLVOL %02x RRVOL %02x\n", chan, val & 0xff, val >> 8);
+		logerror("CH %02d RLVOL %02x RRVOL %02x\n", chan, val >> 8, val & 0xff);
 		#endif
-		info->c352_ch[chan].vol_l2 = val & 0xff;
-		info->c352_ch[chan].vol_r2 = val >> 8;
+		info->c352_ch[chan].vol_l2 = val >> 8;
+		info->c352_ch[chan].vol_r2 = val & 0xff;
 		break;
 
 	case 0x4:
@@ -561,10 +591,10 @@ int c352_sh_start(const struct MachineSound *msound)
 	name[1] = buf[1];
 	name[2] = buf[2];
 	name[3] = buf[3];
-	vol[0]=intf->mixing_level >> 16;
-	vol[1]=intf->mixing_level & 0xffff;
-	vol[2]=intf->mixing_level2 >> 16;
-	vol[3]=intf->mixing_level2 & 0xffff;
+	vol[0] = intf->mixing_level & 0xffff;
+	vol[1] = intf->mixing_level >> 16;
+	vol[2] = intf->mixing_level2 & 0xffff;
+	vol[3] = intf->mixing_level2 >> 16;
 	stream_init_multi(4, name, vol, info->sample_rate_base, 0, c352_update);
 
 	c352_init(&C352s[0], 0);
@@ -589,7 +619,9 @@ WRITE16_HANDLER( c352_0_w )
 	}
 	else
 	{
-		logerror("C352: byte-wide write unsupported at this time!\n");
+		unsigned short val = c352_read_reg16(&C352s[0], offset*2);
+		COMBINE_DATA(&val);
+		c352_write_reg16(&C352s[0], offset*2, val);
 	}
 }
 
