@@ -1,6 +1,6 @@
 // Sega Genesis
 
-// sonic 1 : music runs on IRQ 6 handler @ B10, commands at ffff0a/b/c, z80 program decompress/download @ 134a
+// sonic 1 : music runs in subroutine @ 71b4c, commands at ffff0a/b/c, z80 program decompress/download @ 134a
 
 #include "m1snd.h"
 
@@ -10,6 +10,8 @@ static unsigned char z80_ram[0x2000];
 #include "gen_inc_gems.cpp"
 #include "gen_inc_soundimages.cpp"
 #include "gen_inc_smpsz80.cpp"
+
+static int busy_68k = 0;
 
 static void Gen_Init(long srate);
 static void Gen_SendCmd(int cmda, int cmdb);
@@ -55,13 +57,19 @@ static struct SN76496interface sn76489_intf =
 {
 	1,								/* One chip */
 	{ MASTER_CLOCK/15 },			/* Clock: 3.58 MHz */
-	{ 50 }							/* Volume */
+	{ 10 }							/* Volume */
 };
 
 static unsigned int gen_read_memory_8(unsigned int address)
 {
 	if (address < 0x400000)
 	{
+		return prgrom[address];
+	}
+
+	if (address >= 0x880000 && address <= 0x9FFFFF) 
+	{
+		address -= 0x880000;
 		return prgrom[address];
 	}
 
@@ -95,6 +103,7 @@ static unsigned int gen_read_memory_8(unsigned int address)
 
 	if (address >= 0xe00000)
 	{
+		address &= 0xffff;
 		return workram[(address&0xffff)];
 	}
 
@@ -107,6 +116,11 @@ static unsigned int gen_read_memory_16(unsigned int address)
 	if (address < 0x400000)
 	{
 		return mem_readword_swap((unsigned short *)(prgrom+address));
+	}
+
+	if (address >= 0x880000 && address <= 0x9FFFFF) 
+	{
+		return mem_readword_swap((unsigned short *)(prgrom+(address - 0x880000)));
 	}
 
 	if ((address >= 0xa00000) && (address <= 0xa03fff))
@@ -137,6 +151,11 @@ static unsigned int gen_read_memory_32(unsigned int address)
 	if (address < 0x400000)
 	{
 		return mem_readlong_swap((unsigned int *)(prgrom+address));
+	}
+
+	if (address >= 0x880000 && address <= 0x9FFFFF) 
+	{
+		return mem_readlong_swap((unsigned int *)(prgrom+(address - 0x880000)));
 	}
 
 	if ((address >= 0xa00000) && (address <= 0xa03fff))
@@ -210,6 +229,12 @@ static void gen_write_memory_8(unsigned int address, unsigned int data)
 		return;
 	}
 
+	if (address >= 0xA15100 && address <= 0xA1513F) 
+	{
+		//printf("Program wrote B in 32X space: %08X\n", address);
+		return;
+	}
+
 	if (address >= 0xc00011 && address <= 0xc00017)
 	{
 		SN76496_0_w(0, data&0xff);
@@ -234,7 +259,8 @@ static void gen_write_memory_16(unsigned int address, unsigned int data)
 							     
 	if (address == 0xc10000)
 	{
-//		printf("68k trap, disabling 68k @ %x\n", m68k_get_reg(NULL, M68K_REG_PC));
+		//printf("68k trap, disabling 68k @ %x\n", m68k_get_reg(NULL, M68K_REG_PC));
+		busy_68k = 0;
 		timer_spin_cpu(0);
 		timer_yield();
 		return;
@@ -280,6 +306,12 @@ static void gen_write_memory_16(unsigned int address, unsigned int data)
 		return;
 	}
 
+	if (address >= 0xA15100 && address <= 0xA1513F) 
+	{
+		//printf("Program wrote W in 32X space: %08X\n", address);
+		return;
+	}
+
 	if (address >= 0xe00000)
 	{
 		address &= 0xffff;
@@ -295,6 +327,12 @@ static void gen_write_memory_32(unsigned int address, unsigned int data)
 	{
 		address &= 0x1fff;
 		mem_writelong_swap((unsigned int *)(z80_ram+address), data);
+		return;
+	}
+
+	if (address >= 0xA15100 && address <= 0xA1513F) 
+	{
+		//printf("Program wrote L in 32X space: %08X\n", address);
 		return;
 	}
 
@@ -358,9 +396,22 @@ static READ_HANDLER( z80_read_bank )
 	{
 		return prgrom[addr];
 	}
+	else if (addr <= 0x9FFFFF) 
+	{
+		//printf("Z80 read in 32X space: %08X\n", addr);
+		addr -= 0x880000;
+		return prgrom[addr];
+	}
+
+	else if (addr <= 0xA1513F) 
+	{
+		//printf("Program wrote in 32X space: %08X\n", addr);
+		return 0;
+	}
+
 	else if (addr >= 0xe00000)	// work RAM
 	{
-		printf("Z80 reading workram @ %x\n", addr);
+		//printf("Z80 reading workram @ %x\n", addr);
 		return workram[addr&0xffff];
 	}						     
 	else
@@ -375,8 +426,12 @@ static WRITE_HANDLER( z80_write_bank )
 {
 	UINT32 addr = offset + z80_bank;
 
+	if (addr <= 0xA1513F) 
+	{
+		//printf("Program wrote in 32X space: %08X\n", addr);
+	}
 	// work RAM?
-	if (addr >= 0xe00000)
+	else if (addr >= 0xe00000)
 	{
 		workram[addr&0xffff] = data;
 	}
@@ -413,9 +468,9 @@ static MEMORY_READ_START( snd_readmem )
 	{ 0x0000, 0x1fff, z80_read_shared },
 	{ 0x2000, 0x3fff, z80_read_shared },
 	{ 0x4000, 0x4000, YM2612_status_port_0_A_r },
-	{ 0x4001, 0x4001, YM2612_status_port_0_B_r },
+	{ 0x4001, 0x4001, YM2612_status_port_0_A_r },
 	{ 0x4002, 0x4002, YM2612_status_port_0_A_r },
-	{ 0x4003, 0x4003, YM2612_status_port_0_B_r },
+	{ 0x4003, 0x4003, YM2612_status_port_0_A_r },
 	{ 0x7f00, 0x7fff, z80_read_vdp },
 	{ 0x8000, 0xffff, z80_read_bank },
 MEMORY_END
@@ -519,13 +574,6 @@ static void vbl_timer(int refcon)
 {
 	vdp_status |= 8;
 
-	if (Machine->refcon == 6) 
-	{
-		// run the VBL service routine
-		m68k_set_reg(M68K_REG_PC, 0x300);
-		timer_unspin_cpu(0);	// restart the 68000
-	}
-
 	if (m1snd_get_custom_tag_value("ftrigadr") != 0xffffffff)
 	{
 		z80_ram[m1snd_get_custom_tag_value("ftrigadr")] = m1snd_get_custom_tag_value("ftrigval");
@@ -534,6 +582,26 @@ static void vbl_timer(int refcon)
 	cpu_set_irq_line(1, 0, ASSERT_LINE);
 	timer_set((1.0/60.0)/262.0, 0, vbl_out_timer);
 }
+
+static void Gen_Frame(void)
+{
+	if (Machine->refcon == 6) 
+	{
+		if (!busy_68k) 
+		{
+			// run the VBL service routine
+			printf("start 68k VBL\n");
+			m68k_set_reg(M68K_REG_PC, 0x300);
+			timer_unspin_cpu(0);	// restart the 68000
+			busy_68k = 1;
+		}
+		else
+		{
+			printf("Refusing rekick of 68k - busy\n");
+		}
+	}
+}
+
 
 // makes the 68k die
 static void install_68k_killer(void)
@@ -663,6 +731,10 @@ static void Gen_Init(long srate)
 			write_rom_16(0x30c, 0x32bc);	// move.w 
 			write_rom_16(0x30e, 0x5555);	// #$5555, (a1)	(causes halt of 68k)
 
+			busy_68k = 0;
+
+			memset(workram, 0, 64*1024);
+
 			timer_spin_cpu(1);
 		      	timer_set(1.0/60.0, 0, vbl_timer);
 			break;	
@@ -686,12 +758,12 @@ static void Gen_SendCmd(int cmda, int cmdb)
 {
 	if (cmda == games[curgame].stopcmd)
 	{
-		if (lastcmd == -1) return;
-
 //		printf("Stopping song %d\n", lastcmd);
 
 		if (Machine->refcon == 0)
 		{
+			if (lastcmd == -1) return;
+
 			// patch the code
 			prgrom[0x605] = lastcmd;
 			// point the CPU there
@@ -708,7 +780,7 @@ static void Gen_SendCmd(int cmda, int cmdb)
 		}
 	}
 
-//	printf("Sending %x to GEMS\n", cmda);
+//	printf("Sending %x to Genesis\n", cmda);
 
 	switch (Machine->refcon)
 	{
@@ -726,9 +798,16 @@ static void Gen_SendCmd(int cmda, int cmdb)
 		case 4:	// generic driver w/Z80 image
 		case 1: // generic driver w/JSR setup
 //			printf("CMD %x to generic @ %x\n", cmda, m1snd_get_custom_tag_value("cmdadr"));
+			timer_spin_cpu(0);
+
 			if (m1snd_get_custom_tag_value("cmdadr") != 0xffffffff)
 			{
-				z80_ram[m1snd_get_custom_tag_value("cmdadr")] = cmda;
+				z80_ram[m1snd_get_custom_tag_value("cmdadr")] = cmda&0xff;
+			}
+
+			if (m1snd_get_custom_tag_value("cmdhiadr") != 0xffffffff)
+			{
+				z80_ram[m1snd_get_custom_tag_value("cmdhiadr")] = (cmda>>8)&0xff;
 			}
 
 			if (m1snd_get_custom_tag_value("cmd2adr") != 0xffffffff)
@@ -737,6 +816,8 @@ static void Gen_SendCmd(int cmda, int cmdb)
 
 				z80_ram[base] = (cmda>>8)&0xff;
 				z80_ram[base+1] = (cmda&0xff);
+
+				//printf("%02x @ %x, %02x @ %x\n", z80_ram[base], base, z80_ram[base+1], base+1);
 			}
 
 			if (m1snd_get_custom_tag_value("cmd3adr") != 0xffffffff)
@@ -763,7 +844,13 @@ static void Gen_SendCmd(int cmda, int cmdb)
 
 			if (m1snd_get_custom_tag_value("trigadr") != 0xffffffff)
 			{
-				z80_ram[m1snd_get_custom_tag_value("trigadr")] = m1snd_get_custom_tag_value("trigval");
+					z80_ram[m1snd_get_custom_tag_value("trigadr")] = m1snd_get_custom_tag_value("trigval");
+			}
+
+			if (m1snd_get_custom_tag_value("trig2adr") != 0xffffffff)
+			{
+					z80_ram[m1snd_get_custom_tag_value("trig2adr")] = (m1snd_get_custom_tag_value("trigval")>>8)&0xff;
+					z80_ram[m1snd_get_custom_tag_value("trig2adr")+1] = (m1snd_get_custom_tag_value("trigval")&0xff);
 			}
 			break;
 
@@ -805,9 +892,7 @@ static void Gen_SendCmd(int cmda, int cmdb)
 	  	case 6: // SMPS/68k
 			if (m1snd_get_custom_tag_value("cmdadr") != 0xffffffff)
 			{
-				printf("Command %x to 68k\n", cmda);
-				workram[m1snd_get_custom_tag_value("cmdadr")] = cmda>>8;
-				workram[m1snd_get_custom_tag_value("cmdadr")+1] = cmda&0xff;
+			 	workram[m1snd_get_custom_tag_value("cmdadr")] = cmda & 0xff;
 			}
 			break;	
 	}
@@ -825,7 +910,8 @@ M1_BOARD_START( genesis )
 	MDRV_HWDESC("68000, Z80, YM2612, SN76496")
 	MDRV_INIT( Gen_Init )
 	MDRV_SEND( Gen_SendCmd )
-	MDRV_DELAYS(1000, 100)
+	MDRV_RUN( Gen_Frame )
+	MDRV_DELAYS(1500, 350)
 
 	MDRV_CPU_ADD(MC68000, MASTER_CLOCK / 7)
 	MDRV_CPUMEMHAND(&gen_readwritemem)
