@@ -73,7 +73,7 @@ READ8_HANDLER(tatsumi_hack_oki_r)
 	else if (Machine->refcon == 2)
 	{
 		/* Big Fight */
-		if (PC == 0x1c79)
+		if ((PC == 0x1c79) || (PC == 0x1cbe))
 			return 0xf;
 		else if (PC == 0x1cac)
 			return 0;
@@ -118,7 +118,7 @@ M1_BOARD_START( roundup5 )
 	MDRV_NAME("Round Up 5")
 	MDRV_HWDESC("Z80, YM2151, MSM6295")
 	MDRV_SEND( Tatsumi_SendCmd )
-	MDRV_DELAYS( 500, 15 )
+	MDRV_DELAYS( 2500, 15 )
 	MDRV_CPU_ADD(Z80C, 4000000)
 	MDRV_CPU_MEMORY(sound_readmem, sound_writemem)
 

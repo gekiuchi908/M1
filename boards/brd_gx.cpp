@@ -86,7 +86,7 @@ static M168KT gti_readwritemem =
 M1_BOARD_START( gx )
 	MDRV_NAME( "System GX" )
 	MDRV_HWDESC( "68000, K054539(x2), TMS57002" )
-	MDRV_DELAYS( 800, 15 )
+	MDRV_DELAYS( 3500, 15 )
 	MDRV_INIT( GX_Init )
 	MDRV_SEND( GX_SendCmd )
 
