@@ -10,6 +10,10 @@
 #define HORNET_TIMER_RATE (1000.0/(44100.0/128.0))
 
 static int h_irq1_enable = 0;
+static int h_irq2_enable = 0;
+static int h_irq2_pending = 0;
+static unsigned char k056800_host_to_snd[4];
+static unsigned char k056800_snd_to_host[2];
 
 static void GX_Init(long srate);
 static void GX_SendCmd(int cmda, int cmdb);
@@ -23,6 +27,8 @@ static unsigned int gx_read_memory_32(unsigned int address);
 static void gx_write_memory_8(unsigned int address, unsigned int data);
 static void gx_write_memory_16(unsigned int address, unsigned int data);
 static void gx_write_memory_32(unsigned int address, unsigned int data);
+
+static void hornet_timer(int refcon); // forward decl
 
 static unsigned int hornet_read_memory_8(unsigned int address);
 static unsigned int hornet_read_memory_16(unsigned int address);
@@ -99,11 +105,11 @@ M1_BOARD_END
 M1_BOARD_START( hornet )
 	MDRV_NAME( "Konami Hornet" )
 	MDRV_HWDESC( "68000, RF5c400" )
-	MDRV_DELAYS( 2800, 35 )
+	MDRV_DELAYS( 5500, 35 )
 	MDRV_INIT( Hornet_Init )
 	MDRV_SEND( Hornet_SendCmd )
 
-	MDRV_CPU_ADD(MC68000, 16000000/2)
+	MDRV_CPU_ADD(MC68000, 16000000)
 	MDRV_CPUMEMHAND(&hornet_readwritemem)
 
 	MDRV_SOUND_ADD(RF5C400, &rf5c400_interface)
@@ -112,11 +118,11 @@ M1_BOARD_END
 M1_BOARD_START( gticlub )
 	MDRV_NAME( "GTI Club" )
 	MDRV_HWDESC( "68000, RF5c400" )
-	MDRV_DELAYS( 2800, 35 )
+	MDRV_DELAYS( 5500, 35 )
 	MDRV_INIT( Hornet_Init )
 	MDRV_SEND( Hornet_SendCmd )
 
-	MDRV_CPU_ADD(MC68000, 16000000/2)
+	MDRV_CPU_ADD(MC68000, 16000000)
 	MDRV_CPUMEMHAND(&gti_readwritemem)
 
 	MDRV_SOUND_ADD(RF5C400, &rf5c400_interface)
@@ -332,6 +338,49 @@ static void GX_SendCmd(int cmda, int cmdb)
 
 // ============================================================================================================
 
+static unsigned int hornet_k056800_r(unsigned int address)
+{
+	if (address & 1)
+	{
+		int reg = (address >> 1) & 7;
+		if (reg < 4)
+		{
+			return k056800_host_to_snd[reg];
+		}
+	}
+	return 0;
+}
+
+static void hornet_k056800_w(unsigned int address, unsigned int data)
+{
+	if (address & 1)
+	{
+		int reg = (address >> 1) & 7;
+		switch (reg)
+		{
+			case 0:
+			case 1:
+				k056800_snd_to_host[reg] = data;
+				break;
+			case 4:
+				h_irq2_enable = (data & 1);
+				if (h_irq2_enable)
+				{
+					if (h_irq2_pending)
+					{
+						m68k_set_irq(M68K_IRQ_2);
+					}
+				}
+				else
+				{
+					h_irq2_pending = 0;
+					m68k_set_irq(M68K_IRQ_NONE);
+				}
+				break;
+		}
+	}
+}
+
 static unsigned int hornet_read_memory_8(unsigned int address)
 {
 	address &= 0xffffff;
@@ -347,9 +396,9 @@ static unsigned int hornet_read_memory_8(unsigned int address)
 		return workram[address];
 	}
 
-	if (address >= 0x300000 && address <= 0x30000f)
+	if (address >= 0x300000 && address <= 0x30001f)
 	{
-		return commram[(address&0xf)+16];
+		return hornet_k056800_r(address);
 	}
 
 	return 0;
@@ -374,6 +423,11 @@ static unsigned int hornet_read_memory_16(unsigned int address)
 	{
 		address &= 0xfff;
 		return RF5C400_0_r(address>>1, 0);
+	}
+
+	if (address >= 0x300000 && address <= 0x30001f)
+	{
+		return hornet_k056800_r(address | 1);
 	}
 
 	return 0;
@@ -408,28 +462,29 @@ static void hornet_write_memory_8(unsigned int address, unsigned int data)
 		return;
 	}
 
-	if (address >= 0x300000 && address <= 0x30000f)
+	if (address >= 0x300000 && address <= 0x30001f)
 	{
-//		printf("commram_w: %02x @ %x\n", data, address & 0xf);
-
-		if ((address & 0xf) == 9)
-		{
-//			printf("Timer IRQ enable %d\n", data);
-			if (data)
-			{
-				h_irq1_enable = 1;
-			}
-			else
-			{
-				h_irq1_enable = 0;
-			}
-		}
-
-		commram[(address&0xf)] = data;
+		hornet_k056800_w(address, data);
 		return;
 	}
 
-	if (address == 0x480001) return;	// ack timer IRQ 1
+	if (address >= 0x480000 && address <= 0x480001) return;
+	if (address >= 0x4c0000 && address <= 0x4c0001) return;
+
+	if (address == 0x500000 || address == 0x500001)
+	{
+		if (address & 1)
+		{
+			h_irq1_enable = !(data & 1);
+		}
+		return;
+	}
+
+	if (address == 0x600000 || address == 0x600001)
+	{
+		m68k_set_irq(M68K_IRQ_NONE);
+		return;
+	}
 }
 
 static void hornet_write_memory_16(unsigned int address, unsigned int data)
@@ -446,12 +501,30 @@ static void hornet_write_memory_16(unsigned int address, unsigned int data)
 	if (address >= 0x200000 && address <= 0x200fff)
 	{
 		address &= 0xfff;
-//		printf("%04x to RF @ %x\n", data, address);
 		RF5C400_0_w(address>>1, data, 0);
 		return;
 	}
 
-	if (address == 0x600000) return;	// ack IRQ 2 (latch)
+	if (address >= 0x300000 && address <= 0x30001f)
+	{
+		hornet_k056800_w(address | 1, data & 0xff);
+		return;
+	}
+
+	if (address == 0x480000) return;
+	if (address == 0x4c0000) return;
+
+	if (address == 0x500000)
+	{
+		h_irq1_enable = !(data & 1);
+		return;
+	}
+
+	if (address == 0x600000)
+	{
+		m68k_set_irq(M68K_IRQ_NONE);
+		return;
+	}
 }
 
 static void hornet_write_memory_32(unsigned int address, unsigned int data)
@@ -483,9 +556,9 @@ static unsigned int gti_read_memory_8(unsigned int address)
 		return workram[address];
 	}
 
-	if (address >= 0x300000 && address <= 0x30000f)
+	if (address >= 0x300000 && address <= 0x30001f)
 	{
-		return commram[(address&0xf)+16];
+		return hornet_k056800_r(address);
 	}
 
 	return 0;
@@ -510,6 +583,11 @@ static unsigned int gti_read_memory_16(unsigned int address)
 	{
 		address &= 0xfff;
 		return RF5C400_0_r(address>>1, 0);
+	}
+
+	if (address >= 0x300000 && address <= 0x30001f)
+	{
+		return hornet_k056800_r(address | 1);
 	}
 
 	return 0;
@@ -544,28 +622,29 @@ static void gti_write_memory_8(unsigned int address, unsigned int data)
 		return;
 	}
 
-	if (address >= 0x300000 && address <= 0x30000f)
+	if (address >= 0x300000 && address <= 0x30001f)
 	{
-//		printf("commram_w: %02x @ %x\n", data, address & 0xf);
-
-		if ((address & 0xf) == 9)
-		{
-//			printf("Timer IRQ enable %d\n", data);
-			if (data)
-			{
-				h_irq1_enable = 1;
-			}
-			else
-			{
-				h_irq1_enable = 0;
-			}
-		}
-
-		commram[(address&0xf)] = data;
+		hornet_k056800_w(address, data);
 		return;
 	}
 
-//	printf("Unk W8 %02x @ %06x\n", data, address);
+	if (address >= 0x480000 && address <= 0x480001) return;
+	if (address >= 0x4c0000 && address <= 0x4c0001) return;
+
+	if (address == 0x500000 || address == 0x500001)
+	{
+		if (address & 1)
+		{
+			h_irq1_enable = !(data & 1);
+		}
+		return;
+	}
+
+	if (address == 0x600000 || address == 0x600001)
+	{
+		m68k_set_irq(M68K_IRQ_NONE);
+		return;
+	}
 }
 
 static void gti_write_memory_16(unsigned int address, unsigned int data)
@@ -582,12 +661,30 @@ static void gti_write_memory_16(unsigned int address, unsigned int data)
 	if (address >= 0x400000 && address <= 0x400fff)
 	{
 		address &= 0xfff;
-//		printf("%04x to RF @ %x\n", data, address);
 		RF5C400_0_w(address>>1, data, 0);
 		return;
 	}
 
-	if (address == 0x600000) return;
+	if (address >= 0x300000 && address <= 0x30001f)
+	{
+		hornet_k056800_w(address | 1, data & 0xff);
+		return;
+	}
+
+	if (address == 0x480000) return;
+	if (address == 0x4c0000) return;
+
+	if (address == 0x500000)
+	{
+		h_irq1_enable = !(data & 1);
+		return;
+	}
+
+	if (address == 0x600000)
+	{
+		m68k_set_irq(M68K_IRQ_NONE);
+		return;
+	}
 }
 
 static void gti_write_memory_32(unsigned int address, unsigned int data)
@@ -600,20 +697,13 @@ static void gti_write_memory_32(unsigned int address, unsigned int data)
 		mem_writelong_swap((unsigned int *)(workram+address), data);
 		return;
 	}
-
-//	printf("Unk W32 %08x @ %06x\n", data, address);
 }
 
 static void hornet_timer(int refcon)
 {
 	if (h_irq1_enable)
 	{
-		m68k_set_irq(M68K_IRQ_1);	// IRQ1 on timer
-		m68k_set_irq(M68K_IRQ_NONE);
-	}
-	else
-	{
-		m68k_set_irq(M68K_IRQ_NONE);
+		m68k_set_irq(M68K_IRQ_1);
 	}
 
 	timer_set(TIME_IN_MSEC(HORNET_TIMER_RATE), 0, hornet_timer);
@@ -622,6 +712,10 @@ static void hornet_timer(int refcon)
 static void Hornet_Init(long srate)
 {
 	h_irq1_enable = 0;
+	h_irq2_enable = 0;
+	h_irq2_pending = 0;
+	memset(k056800_host_to_snd, 0, sizeof(k056800_host_to_snd));
+	memset(k056800_snd_to_host, 0, sizeof(k056800_snd_to_host));
 	timer_set(TIME_IN_MSEC(HORNET_TIMER_RATE), 0, hornet_timer);
 }
 
@@ -629,21 +723,23 @@ static void Hornet_SendCmd(int cmda, int cmdb)
 {
 	if (!cmda)
 	{
-		commram[16+1] = 0xf7;
-		commram[16+3] = 0;
-		commram[16+5] = 0;
-		commram[16+7] = 0;
-		commram[16+9] = 0x10;
+		k056800_host_to_snd[0] = 0xf7;
+		k056800_host_to_snd[1] = 0;
+		k056800_host_to_snd[2] = 0;
+		k056800_host_to_snd[3] = 0;
 	}
 	else
 	{
-		commram[16+1] = cmda>>8;
-		commram[16+3] = cmda&0xff;
-		commram[16+5] = 0;
-		commram[16+7] = 0;
-		commram[16+9] = 0x10;
+		k056800_host_to_snd[0] = cmda >> 8;
+		k056800_host_to_snd[1] = cmda & 0xff;
+		k056800_host_to_snd[2] = 0;
+		k056800_host_to_snd[3] = 0;
 	}
 
-	m68k_set_irq(M68K_IRQ_2);
+	h_irq2_pending = 1;
+	if (h_irq2_enable)
+	{
+		m68k_set_irq(M68K_IRQ_2);
+	}
 }
 
