@@ -303,7 +303,7 @@ static M168KT readwritemem =
 M1_BOARD_START( dsb )
 	MDRV_NAME("Sega Digital Sound Board (type 2)")
 	MDRV_HWDESC("68000, Sega 315-5762")
-	MDRV_DELAYS(500, 100)
+	MDRV_DELAYS(1500, 100)
 	MDRV_INIT( DSB_Init )
 	MDRV_UPDATE( DSB_Update )
 	MDRV_SEND( DSB_SendCmd )

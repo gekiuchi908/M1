@@ -93,7 +93,6 @@ static unsigned int pb_readmem(unsigned int address)
 
 	if (address == 0x1860)
 	{
-//		printf("reading cmd %d\n", cmd_latch);
 		cpu_set_irq_line(0, IRQ_LINE_NMI, CLEAR_LINE);
 		status &= ~0x01;
 		return cmd_latch;
@@ -190,6 +189,7 @@ static void PB_Init(long srate)
 {
 	tms5220_data_strobe = 1;
 
+	memset(workram, 0, 0x1000);
 	memset(&workram[0x1000], 0xff, 0x800);
 
 	timer_set(TIMER_RATE, 0, timer);
@@ -207,7 +207,7 @@ M1_BOARD_START( ataris2 )
 	MDRV_HWDESC("6502, YM2151, TMS5220, POKEY(x2)")
 	MDRV_INIT( PB_Init )
 	MDRV_SEND( PB_SendCmd )
-	MDRV_DELAYS( 500, 15 )
+	MDRV_DELAYS( 4500, 15 )
 
 	MDRV_CPU_ADD(M6502, M6502_CLOCK)
 	MDRV_CPUMEMHAND(&mmrw)
