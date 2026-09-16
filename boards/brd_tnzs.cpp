@@ -370,19 +370,13 @@ static void Kikikai_Init(long foo)
 {
 	vblank_timer = timer_pulse(TIME_IN_HZ(60), 0, timer_callback);
 	workram[0x1fff] = 0xff;
-}
-
-static void delayed_cmd(int ref)
-{
-	workram[0x1fff] = ref;
+	m1snd_addToCmdQueue(0xef);
 }
 
 static void Kikikai_SendCmd(int cmda, int cmdb)
 {
-	workram[0x1fff] = 0xef;
-	timer_set(TIME_IN_USEC(1000), cmda, delayed_cmd);
+	workram[0x1fff] = cmda;
 }
-
 
 static READ_HANDLER( kiki_2203_r )
 {
