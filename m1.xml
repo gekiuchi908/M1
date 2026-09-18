@@ -12665,7 +12665,7 @@
 		</region>
 	</game>
 	<game name="lostwsga" board="Model 3">
-		<description>The Lost World</description>
+		<description>The Lost World: Jurassic Park (Revision A)</description>
 		<year>1997</year>
 		<manufacturer>Sega</manufacturer>
 		<m1data default="0" stop="255" min="0" max="255" subtype="3"/>
