@@ -79,6 +79,12 @@ static void OR_Init(long srate)
 	m1snd_setCmdSuffixStr(or_suffix);
 }
 
+static void OR_Stop(int cmda)
+{
+	// OutRun command dispatcher automatically stops sounds on song start.
+	// Sending partial bytes desyncs the 8-byte Z80 packet alignment.
+}
+
 static void SP_SendCmd(int cmda, int cmdb)
 {
 	cmd_latch = cmda;
@@ -161,9 +167,10 @@ M1_BOARD_END
 M1_BOARD_START( segashang )
 	MDRV_NAME( "Super Hang-On" )
 	MDRV_HWDESC( "Z80, YM2151, Sega PCM (BANK_512)" )
-	MDRV_DELAYS( 60, 15 )
+	MDRV_DELAYS( 60, 1 )
 	MDRV_INIT( OR_Init )
 	MDRV_SEND( SP_SendCmd )
+	MDRV_STOP( OR_Stop )
 
 	MDRV_CPU_ADD(Z80C, TOR_Z80_CLOCK)
 	MDRV_CPU_MEMORY(snd_readmem,snd_writemem)
@@ -176,9 +183,10 @@ M1_BOARD_END
 M1_BOARD_START( segaorun )
 	MDRV_NAME( "OutRun" )
 	MDRV_HWDESC( "Z80, YM2151, Sega PCM (BANK_256)" )
-	MDRV_DELAYS( 60, 15 )
+	MDRV_DELAYS( 60, 1 )
 	MDRV_INIT( OR_Init )
 	MDRV_SEND( SP_SendCmd )
+	MDRV_STOP( OR_Stop )
 
 	MDRV_CPU_ADD(Z80C, TOR_Z80_CLOCK)
 	MDRV_CPU_MEMORY(snd_readmem,snd_writemem)

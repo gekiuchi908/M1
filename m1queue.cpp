@@ -98,6 +98,8 @@ static void queue_timercb(int refcon)
 	}
 
 	cmd_qmutex = 0;
+
+	m1snd_processQueue();
 }
 
 static void queue_startcb(int refcon)

@@ -830,10 +830,9 @@ DLLEXPORT int m1snd_run(int command, int iparm)
 				}
 
 				waveLogStop();
+				cmd1 = iparm;
 				waveLogInit(wavelog, games[curgame].zipname, iparm);
 				waveLogStart();
-
-				cmd1 = iparm;
 				if (cur_board)
 				{
 					if (cur_board->StopCmd)
