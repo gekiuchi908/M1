@@ -297,7 +297,7 @@ static int m1ui_message(void *this, int message, char *txt, int iparm)
 		// called when a song is (re)triggered
 		case M1_MSG_STARTINGSONG:
 			curgame = m1snd_get_info_int(M1_IINF_CURGAME, 0);
-			if (m1snd_get_info_str(M1_SINF_TRKNAME, (iparm<<16) | curgame) == (char *)NULL)
+			if (m1snd_get_info_str_ex(M1_SINF_EX_TRKNAME, curgame, iparm, 0) == (char *)NULL)
 			{
 				printf("Starting song #%d\n", iparm);
 			}
@@ -307,12 +307,12 @@ static int m1ui_message(void *this, int message, char *txt, int iparm)
 				char *rawname, transname[512];
 
 				#if HAVE_ICONV
-				rawname = m1snd_get_info_str(M1_SINF_TRKNAME, (iparm<<16) | curgame);
+				rawname = m1snd_get_info_str_ex(M1_SINF_EX_TRKNAME, curgame, iparm, 0);
 //				printf("rawname = [%s]\n", rawname);
 				memset(transname, 0, 512);
 				char_conv(rawname, transname, 512);
 				#else	// pass-through
-				rawname = m1snd_get_info_str(M1_SINF_TRKNAME, (iparm<<16) | curgame);
+				rawname = m1snd_get_info_str_ex(M1_SINF_EX_TRKNAME, curgame, iparm, 0);
 				strcpy(transname, rawname);
 				#endif
 

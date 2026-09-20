@@ -1259,6 +1259,10 @@ DLLEXPORT char *m1snd_get_info_str_ex(int sinfo, int parm1, int parm2, int parm3
 		case M1_SINF_EX_EXTRA:
 			return trklist_getextra(game_trklists[parm1], parm2, parm3);
 			break;
+
+		case M1_SINF_EX_TRKNAME:
+			return trklist_getname(game_trklists[parm1], parm2);
+			break;
 	}
 
 	return NULL;

@@ -172,6 +172,8 @@ enum
 
 	M1_SINF_EX_EXTRA,	// get "extra" text for a song, if any.  parm1 = the game, parm2 = the song,
 				// and parm3 = the text item number
+	M1_SINF_EX_TRKNAME,	// get track name.  parm1 = the game, parm2 = the song, parm3 = unused
+#define M1_SINF_EX_TRKNAM M1_SINF_EX_TRKNAME
 
 	// set commands.  these are for use only with m1snd_set_info_str!
 	M1_SINF_SET_TRKNAME,	// set track's name.  info = name, parm1 = game, parm2 = song, parm3 = unused
