@@ -32,6 +32,7 @@ void trklist_setlang(int lang);
 long trklist_getnumextras(TrkT *list, int num);
 char *trklist_getextra(TrkT *list, int num, int numextra);
 int trklist_getfixvol(TrkT *list);
+long trklist_getfade(TrkT *list, int num);
 
 TrkT *trklist_setname(TrkT *list, int songnum, char *name);
 TrkT *trklist_setextra(TrkT *list, int songnum, int extranum, char *extratxt);

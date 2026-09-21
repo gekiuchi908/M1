@@ -50,6 +50,7 @@ struct M1Machine *Machine;
 static int bDefcmd = 0, bUseInternalSnd = 1, bResetNormalizeBetweenSongs = 1;
 static float fVolume = 1.0f, fPostVolume = 1.0f;
 static float fHeadMix = 0.0f;
+static long cur_song_frames = -1, cur_song_fade = 0;
 
 M1GameT *games = (M1GameT *)NULL;
 static int total_games = 0;
@@ -84,6 +85,20 @@ static void *brdlist[] =
 #define MAX_TRACKLISTS	(2048)
 
 static TrkT *game_trklists[MAX_TRACKLISTS];
+
+static void m1snd_update_cur_track_fade(void)
+{
+	if (game_trklists[curgame] != (TrkT *)NULL)
+	{
+		cur_song_frames = trklist_getlength(game_trklists[curgame], cmd1);
+		cur_song_fade = trklist_getfade(game_trklists[curgame], cmd1);
+	}
+	else
+	{
+		cur_song_frames = -1;
+		cur_song_fade = 0;
+	}
+}
 
 // run DSPs up to a certain position in the frame
 void m1snd_update_dsps(long newpos, long totalsamp)
@@ -206,6 +221,26 @@ DLLEXPORT void m1snd_do_frame(unsigned long dwSamples, signed short *out)
 		{
 			out[i] = (short)((float)out[i] * fVolume);
 			out[i+1] = (short)((float)out[i+1] * fVolume);
+		}
+	}
+
+	// handle automatic fadeout if configured in track list
+	if (cur_song_frames > 0 && cur_song_fade > 0)
+	{
+		long fade_start = cur_song_frames - cur_song_fade;
+		if (fade_start < 0) fade_start = 0;
+
+		if (songtime >= cur_song_frames)
+		{
+			fPostVolume = 0.0f;
+		}
+		else if (songtime >= fade_start)
+		{
+			long rem = cur_song_frames - songtime;
+			float ratio = (float)rem / (float)cur_song_fade;
+			if (ratio < 0.0f) ratio = 0.0f;
+			if (ratio > 1.0f) ratio = 1.0f;
+			fPostVolume = ratio;
 		}
 	}
 
@@ -514,6 +549,8 @@ static void m1snd_initnewgame(void)
 	{
 		fVolume = 1.0f;
 	}
+
+	m1snd_update_cur_track_fade();
 
 	if (bUseInternalSnd)
 	{
@@ -850,6 +887,7 @@ DLLEXPORT int m1snd_run(int command, int iparm)
 					m1snd_addToCmdQueue(cmd1);
 					m1ui_message(m1ui_this, M1_MSG_STARTINGSONG, NULL, cmd1);
 					songtime = 0;
+					m1snd_update_cur_track_fade();
 				}
 			}
 			else
@@ -1179,6 +1217,10 @@ DLLEXPORT int m1snd_get_info_int(int iinfo, int parm)
 
 		case M1_IINF_CHANPAN:
 			return mixer_get_chan_pan(parm>>16, parm&0xffff);
+			break;
+
+		case M1_IINF_TRKFADE:
+			return trklist_getfade(game_trklists[parm&0xffff], parm>>16);
 			break;
 	}
 

@@ -177,6 +177,7 @@ static void trklist_addtrk(int tnum, char *linebuffer)
 	newnode->number = tnum;
 	newnode->name[0] = '\0';
 	newnode->frames = -1;
+	newnode->fadeout = 0;
 	newnode->next = (TrkT *)NULL;
 	newnode->curextra = 0;
 	
@@ -272,6 +273,9 @@ static void trklist_addtrk(int tnum, char *linebuffer)
 		}
 		else if (version == 2)
 		{
+			int has_fadeout = -1;
+			long fade_frames = -1;
+
 			// version 2 files have an XML-like string of tokens
 // 			printf("v2 trk length [%s] =", &linebuffer[i]);
 			while ((linebuffer[i] != '>') && (i < 512) && (linebuffer[i] != 0x0a) && (linebuffer[i] != 0x0d))
@@ -291,7 +295,7 @@ static void trklist_addtrk(int tnum, char *linebuffer)
 						int orig_i = i;
 
 						j = 0;
-						while ((linebuffer[i] !=':') && (linebuffer[i] != '\0') && (i < 512))
+						while ((linebuffer[i] !=':') && (linebuffer[i] != '"') && (linebuffer[i] != '\0') && (i < 512))
 						{
 							token[j++] = linebuffer[i++];
 						}
@@ -314,6 +318,7 @@ static void trklist_addtrk(int tnum, char *linebuffer)
 						{
 							token[j++] = linebuffer[i++];
 						}
+						token[j] = '\0';
 						seconds = strtod(token, NULL);
 
 //						printf("%f mins %f secs\n", minutes, seconds);
@@ -328,8 +333,53 @@ static void trklist_addtrk(int tnum, char *linebuffer)
 						TOKENIZETOQUOTE
 						EATPASTQUOTE
 
-						seconds = strtod(token, NULL);
-						newnode->fadeout = (long)seconds;
+						if (!strcasecmp(token, "yes") || !strcmp(token, "1") || !strcasecmp(token, "true"))
+						{
+							has_fadeout = 1;
+						}
+						else if (!strcasecmp(token, "no") || !strcmp(token, "0") || !strcasecmp(token, "false"))
+						{
+							has_fadeout = 0;
+						}
+						else
+						{
+							double sec = strtod(token, NULL);
+							if (sec > 0.0)
+							{
+								has_fadeout = 1;
+								fade_frames = (long)(sec * 60.0);
+							}
+							else
+							{
+								has_fadeout = 0;
+							}
+						}
+					}
+					else if (!strcmp(token, "fadeoutlength"))
+					{
+						char *colon;
+						double f_min = 0.0, f_sec = 0.0;
+
+						j = 0;
+						TOKENIZETOQUOTE
+						EATPASTQUOTE
+
+						colon = strchr(token, ':');
+						if (colon != NULL)
+						{
+							*colon = '\0';
+							f_min = strtod(token, NULL);
+							f_sec = strtod(colon + 1, NULL);
+						}
+						else
+						{
+							f_sec = strtod(token, NULL);
+						}
+						fade_frames = (long)((f_min * 60.0 + f_sec) * 60.0);
+						if (has_fadeout == -1)
+						{
+							has_fadeout = 1;
+						}
 					}
 					else
 					{
@@ -338,6 +388,24 @@ static void trklist_addtrk(int tnum, char *linebuffer)
 						EATPASTQUOTE
 				 	}
 				}
+			}
+
+			if (has_fadeout == 1)
+			{
+				if (fade_frames <= 0)
+				{
+					// default fadeout: 10 seconds
+					fade_frames = 10 * 60;
+				}
+				if (newnode->frames > 0 && fade_frames > newnode->frames)
+				{
+					fade_frames = newnode->frames;
+				}
+				newnode->fadeout = fade_frames;
+			}
+			else
+			{
+				newnode->fadeout = 0;
 			}
 		}
 		else
@@ -932,6 +1000,21 @@ long trklist_getlength(TrkT *list, int num)
 	}
 
 	return -1;
+}
+
+// trklist_getfade: gets the fadeout length for a track in 1/60 second units (0 = none)
+long trklist_getfade(TrkT *list, int num)
+{
+	TrkT *node;
+
+	node = trklist_getnode(list, num);
+
+	if (node != (TrkT *)NULL)
+	{
+		return node->fadeout;
+	}
+
+	return 0;
 }
 
 // trklist_getnumsongs: gets the number of "named" songs

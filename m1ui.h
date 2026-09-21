@@ -145,6 +145,7 @@ enum
 	M1_IINF_NUMCHANS,	// returns the current number of mixer channels for a stream
 	M1_IINF_CHANLEVEL,	// returns the level of a mixer channel (high 16 bits = stream #, low 16 bits = chan #)
 	M1_IINF_CHANPAN,	// returns the pan setting of a mixer channel (high 16 bits = stream #, low 16 bits = chan #, result: 0 = center, 1 = left, 2 = right)
+	M1_IINF_TRKFADE,	// returns the fadeout length in 1/60 second units (0 = no fadeout)
 };
 
 // string info types for UI/core communication
