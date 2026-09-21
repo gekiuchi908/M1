@@ -141,10 +141,27 @@ TrackListData TrackListParser::load(const QString &romName, int minCmd, int maxC
                     title.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&");
                     item.title = title;
 
-                    if (rawTime.startsWith("00:")) {
-                        rawTime = rawTime.mid(1); // "0:48"
-                    } else if (rawTime.startsWith("0") && rawTime.length() > 3 && rawTime[2] == ':') {
-                        rawTime = rawTime.mid(1);
+                    if (!rawTime.isEmpty()) {
+                        if (!rawTime.contains(':')) {
+                            // 秒数指定 ("20", "180", "5.67" 等) を mm:ss 形式に正規化
+                            bool ok = false;
+                            double totalSec = rawTime.toDouble(&ok);
+                            if (ok) {
+                                int min = (int)totalSec / 60;
+                                double sec = totalSec - (min * 60);
+                                if (sec == (int)sec) {
+                                    rawTime = QString("%1:%2").arg(min).arg((int)sec, 2, 10, QChar('0'));
+                                } else {
+                                    rawTime = QString("%1:%2").arg(min).arg(sec, 5, 'f', 2, QChar('0'));
+                                }
+                            }
+                        } else {
+                            if (rawTime.startsWith("00:")) {
+                                rawTime = rawTime.mid(1); // "0:48"
+                            } else if (rawTime.startsWith("0") && rawTime.length() > 3 && rawTime[2] == ':') {
+                                rawTime = rawTime.mid(1);
+                            }
+                        }
                     }
                     item.time = rawTime;
                     data.items.push_back(item);

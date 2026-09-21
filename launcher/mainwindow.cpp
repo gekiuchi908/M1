@@ -521,7 +521,9 @@ int MainWindow::getCurrentTrackDuration() const {
         if (!it.isSeparator && it.songNum == m_currentSongNum) {
             if (it.time.isEmpty()) return 0;
             QStringList parts = it.time.split(':');
-            if (parts.size() == 2) {
+            if (parts.size() == 1) {
+                return qRound(parts[0].toDouble());
+            } else if (parts.size() == 2) {
                 int min = parts[0].toInt();
                 double sec = parts[1].toDouble();
                 return min * 60 + qRound(sec);
