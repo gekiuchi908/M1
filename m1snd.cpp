@@ -187,7 +187,7 @@ DLLEXPORT void m1snd_do_frame(unsigned long dwSamples, signed short *out)
 	}
 
 	// Normalise
-	if ((bNormalize) && (fVolume == 1.0f))
+	if (bNormalize)
 	{
 		max = (abs(min) > max) ? abs(min) : max;
 		calc = 32000 / (double)max;

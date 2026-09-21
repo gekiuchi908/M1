@@ -8,6 +8,8 @@ struct TrackItem {
     QString title;
     QString time;
     bool isSeparator = false;
+    bool fadeout = false;
+    QString fadeoutLength;
 };
 
 struct TrackListData {

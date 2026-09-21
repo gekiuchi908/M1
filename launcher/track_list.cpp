@@ -46,9 +46,13 @@ TrackListData TrackListParser::load(const QString &romName, int minCmd, int maxC
             QTextStream in(&file);
             in.setEncoding(QStringConverter::Utf8);
 
-            static QRegularExpression rxDefault("^\\$default=(\\d+)");
+            static QRegularExpression rxDefault("^\\$default=(\\$?[0-9a-fA-F]+)");
             static QRegularExpression rxFixedVol("^\\$fixed_volume=(\\d+)");
-            static QRegularExpression rxTrack("^#(\\d+)\\s*(.*?)(?:\\s*<time=\"([^\"]*)\">)?$");
+            static QRegularExpression rxTrack("^([#$])([0-9a-fA-F]+)\\s+(.*)$");
+            static QRegularExpression rxTime("time=\"([^\"]*)\"");
+            static QRegularExpression rxV1Time("^(\\d+:\\d+(?:\\.\\d+)?)$");
+            static QRegularExpression rxFadeout("fadeout=\"([^\"]*)\"");
+            static QRegularExpression rxFadeLen("fadeoutlength=\"([^\"]*)\"");
 
             while (!in.atEnd()) {
                 QString line = in.readLine().trimmed();
@@ -62,7 +66,12 @@ TrackListData TrackListParser::load(const QString &romName, int minCmd, int maxC
 
                 auto matchDef = rxDefault.match(line);
                 if (matchDef.hasMatch()) {
-                    data.defaultSong = matchDef.captured(1).toInt();
+                    QString val = matchDef.captured(1);
+                    if (val.startsWith('$')) {
+                        data.defaultSong = val.mid(1).toInt(nullptr, 16);
+                    } else {
+                        data.defaultSong = val.toInt();
+                    }
                     continue;
                 }
 
@@ -82,12 +91,56 @@ TrackListData TrackListParser::load(const QString &romName, int minCmd, int maxC
 
                 auto matchTrk = rxTrack.match(line);
                 if (matchTrk.hasMatch()) {
+                    bool ok = false;
+                    int songNum = -1;
+                    if (matchTrk.captured(1) == "#") {
+                        songNum = matchTrk.captured(2).toInt(&ok, 10);
+                    } else {
+                        songNum = matchTrk.captured(2).toInt(&ok, 16);
+                    }
+                    if (!ok) continue;
+
                     TrackItem item;
-                    item.songNum = matchTrk.captured(1).toInt();
-                    QString title = matchTrk.captured(2).trimmed();
+                    item.songNum = songNum;
+
+                    QString rest = matchTrk.captured(3).trimmed();
+                    int tagStart = rest.indexOf('<');
+                    int tagEnd = rest.lastIndexOf('>');
+
+                    QString title;
+                    QString rawTime;
+
+                    if (tagStart != -1 && tagEnd > tagStart) {
+                        title = rest.left(tagStart).trimmed();
+                        QString tagContent = rest.mid(tagStart + 1, tagEnd - tagStart - 1).trimmed();
+
+                        auto matchTime = rxTime.match(tagContent);
+                        if (matchTime.hasMatch()) {
+                            rawTime = matchTime.captured(1).trimmed();
+                        } else {
+                            auto matchV1 = rxV1Time.match(tagContent);
+                            if (matchV1.hasMatch()) {
+                                rawTime = matchV1.captured(1).trimmed();
+                            }
+                        }
+
+                        auto matchFade = rxFadeout.match(tagContent);
+                        if (matchFade.hasMatch()) {
+                            QString fo = matchFade.captured(1).trimmed().toLower();
+                            item.fadeout = (fo == "yes" || fo == "1" || fo == "true");
+                        }
+
+                        auto matchFadeLen = rxFadeLen.match(tagContent);
+                        if (matchFadeLen.hasMatch()) {
+                            item.fadeoutLength = matchFadeLen.captured(1).trimmed();
+                        }
+                    } else {
+                        title = rest;
+                    }
+
                     title.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&");
                     item.title = title;
-                    QString rawTime = matchTrk.captured(3).trimmed();
+
                     if (rawTime.startsWith("00:")) {
                         rawTime = rawTime.mid(1); // "0:48"
                     } else if (rawTime.startsWith("0") && rawTime.length() > 3 && rawTime[2] == ':') {
@@ -95,6 +148,9 @@ TrackListData TrackListParser::load(const QString &romName, int minCmd, int maxC
                     }
                     item.time = rawTime;
                     data.items.push_back(item);
+                } else if (line.startsWith('$')) {
+                    // $name, $version, $songmax, $main 等のディレクティブ行をスキップ
+                    continue;
                 }
             }
             return data;
