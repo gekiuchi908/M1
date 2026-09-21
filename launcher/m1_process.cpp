@@ -20,7 +20,7 @@ bool M1Process::isRunning() const {
     return m_process->state() != QProcess::NotRunning;
 }
 
-void M1Process::play(const QString &m1BinPath, const QString &romName, const QStringList &extraArgs) {
+void M1Process::play(const QString &m1BinPath, const QString &romName, int songNum, const QStringList &extraArgs) {
     m_externalTerminal = false;
 
     if (isRunning()) {
@@ -34,6 +34,8 @@ void M1Process::play(const QString &m1BinPath, const QString &romName, const QSt
 
     m_stoppingByUser = false;
     m_currentRom = romName;
+    m_currentDriver.clear();
+    m_currentHardware.clear();
 
     QString program = m1BinPath;
     if (!QFileInfo::exists(program)) {
@@ -42,6 +44,9 @@ void M1Process::play(const QString &m1BinPath, const QString &romName, const QSt
 
     QStringList args = extraArgs;
     args << romName;
+    if (songNum > 0) {
+        args << QString::number(songNum);
+    }
 
     m_process->setWorkingDirectory(QFileInfo(program).absolutePath());
     m_process->start(program, args);
@@ -51,7 +56,7 @@ void M1Process::play(const QString &m1BinPath, const QString &romName, const QSt
     }
 }
 
-void M1Process::playInTerminal(const QString &m1BinPath, const QString &romName, const QStringList &extraArgs) {
+void M1Process::playInTerminal(const QString &m1BinPath, const QString &romName, int songNum, const QStringList &extraArgs) {
     if (isRunning()) {
         m_stoppingByUser = true;
         m_process->terminate();
@@ -64,6 +69,8 @@ void M1Process::playInTerminal(const QString &m1BinPath, const QString &romName,
     m_stoppingByUser = false;
     m_externalTerminal = true;
     m_currentRom = romName;
+    m_currentDriver.clear();
+    m_currentHardware.clear();
 
     QString program = m1BinPath;
     if (!QFileInfo::exists(program)) {
@@ -79,29 +86,31 @@ void M1Process::playInTerminal(const QString &m1BinPath, const QString &romName,
     QString terminal;
     QStringList termArgs;
 
+    QStringList cmdArgs = extraArgs;
+    cmdArgs << romName;
+    if (songNum > 0) {
+        cmdArgs << QString::number(songNum);
+    }
+
     if (!QStandardPaths::findExecutable("x-terminal-emulator").isEmpty()) {
         terminal = "x-terminal-emulator";
         termArgs << "-e" << absProgram;
-        termArgs << extraArgs;
-        termArgs << romName;
+        termArgs << cmdArgs;
     } else if (!QStandardPaths::findExecutable("gnome-terminal").isEmpty()) {
         terminal = "gnome-terminal";
         termArgs << "--" << absProgram;
-        termArgs << extraArgs;
-        termArgs << romName;
+        termArgs << cmdArgs;
     } else if (!QStandardPaths::findExecutable("konsole").isEmpty()) {
         terminal = "konsole";
         termArgs << "-e" << absProgram;
-        termArgs << extraArgs;
-        termArgs << romName;
+        termArgs << cmdArgs;
     } else if (!QStandardPaths::findExecutable("xterm").isEmpty()) {
         terminal = "xterm";
         termArgs << "-e" << absProgram;
-        termArgs << extraArgs;
-        termArgs << romName;
+        termArgs << cmdArgs;
     } else {
         // 見つからない場合は通常起動にフォールバック
-        play(m1BinPath, romName, extraArgs);
+        play(m1BinPath, romName, songNum, extraArgs);
         return;
     }
 
@@ -169,12 +178,29 @@ void M1Process::onReadyReadStandardError() {
 }
 
 void M1Process::parseOutputLine(const QString &line) {
-    static QRegularExpression rx("Starting song #(\\d+)(?::\\s*(.*))?");
-    auto match = rx.match(line);
-    if (match.hasMatch()) {
-        int songNum = match.captured(1).toInt();
-        QString trackName = match.captured(2).trimmed();
+    static QRegularExpression rxSong("^Starting song #(\\d+)(?::\\s*(.*))?");
+    auto matchSong = rxSong.match(line);
+    if (matchSong.hasMatch()) {
+        int songNum = matchSong.captured(1).toInt();
+        QString trackName = matchSong.captured(2).trimmed();
         emit songChanged(songNum, trackName);
+        return;
+    }
+
+    static QRegularExpression rxDrv("^Driver:\\s*(.*)$");
+    auto matchDrv = rxDrv.match(line);
+    if (matchDrv.hasMatch()) {
+        m_currentDriver = matchDrv.captured(1).trimmed();
+        emit hardwareInfoDetected(m_currentDriver, m_currentHardware);
+        return;
+    }
+
+    static QRegularExpression rxHw("^Hardware:\\s*(.*)$");
+    auto matchHw = rxHw.match(line);
+    if (matchHw.hasMatch()) {
+        m_currentHardware = matchHw.captured(1).trimmed();
+        emit hardwareInfoDetected(m_currentDriver, m_currentHardware);
+        return;
     }
 }
 

@@ -1,4 +1,5 @@
 #include "game_table_model.h"
+#include "i18n.h"
 #include <QColor>
 #include <QFont>
 
@@ -25,7 +26,7 @@ QVariant GameTableModel::data(const QModelIndex &index, int role) const {
     if (role == Qt::DisplayRole) {
         switch (col) {
             case ColStatus:
-                return QString::fromUtf8(gameStatusToBadge(game.status));
+                return I18n::gameStatusToBadge(game.status);
             case ColDescription:
                 return QString::fromStdString(game.description);
             case ColYear:
@@ -96,17 +97,16 @@ QVariant GameTableModel::data(const QModelIndex &index, int role) const {
 
 QVariant GameTableModel::headerData(int section, Qt::Orientation orientation, int role) const {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
-        switch (section) {
-            case ColStatus:        return "状態";
-            case ColDescription:   return "ゲーム名";
-            case ColYear:          return "年";
-            case ColManufacturer:  return "メーカ";
-            case ColRomName:       return "ROM名";
-            case ColBoard:         return "基板";
-            case ColRomCount:      return "ROM数";
-        }
+        return I18n::tableHeader(section);
     }
     return QVariant();
+}
+
+void GameTableModel::refreshTranslations() {
+    emit headerDataChanged(Qt::Horizontal, 0, ColCount - 1);
+    if (!m_games.empty()) {
+        emit dataChanged(createIndex(0, ColStatus), createIndex(static_cast<int>(m_games.size()) - 1, ColStatus));
+    }
 }
 
 void GameTableModel::setGames(const std::vector<GameEntry> &games) {

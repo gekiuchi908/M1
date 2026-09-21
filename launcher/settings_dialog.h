@@ -11,6 +11,9 @@ class SettingsDialog : public QDialog {
 public:
     explicit SettingsDialog(QWidget *parent = nullptr);
 
+    void setLanguage(const QString &lang);
+    QString language() const;
+
     void setRomPath(const QString &path);
     QString romPath() const;
 
@@ -29,11 +32,25 @@ public:
 private slots:
     void onBrowseRomPath();
     void onBrowseM1Bin();
+    void onLanguageChanged(int index);
 
 private:
+    void retranslateUi();
+
+    QComboBox *m_languageCombo;
     QLineEdit *m_romPathEdit;
+    QPushButton *m_romBrowseBtn;
     QLineEdit *m_m1BinEdit;
+    QPushButton *m_binBrowseBtn;
     QComboBox *m_driverCombo;
     QComboBox *m_sampleRateCombo;
     QCheckBox *m_terminalCheck;
+
+    class QLabel *m_langLabel;
+    class QLabel *m_romDirLabel;
+    class QLabel *m_m1BinLabel;
+    class QLabel *m_driverLabel;
+    class QLabel *m_sampleRateLabel;
+    class QLabel *m_execModeLabel;
+    class QDialogButtonBox *m_btnBox;
 };

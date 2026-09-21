@@ -154,9 +154,10 @@ QT_LIBS   = $(shell PKG_CONFIG_PATH=$(QT_PKG_PATH):$$PKG_CONFIG_PATH pkg-config 
 
 LAUNCHER_SRCS = launcher/main.cpp launcher/xml_parser.cpp launcher/game_table_model.cpp \
                 launcher/rom_verifier.cpp launcher/m1_process.cpp launcher/settings_dialog.cpp \
-                launcher/mainwindow.cpp
+                launcher/game_cache.cpp launcher/track_list.cpp launcher/rom_browser_dialog.cpp \
+                launcher/mainwindow.cpp launcher/i18n.cpp
 LAUNCHER_MOC_HEADERS = launcher/game_table_model.h launcher/rom_verifier.h launcher/m1_process.h \
-                       launcher/settings_dialog.h launcher/mainwindow.h
+                       launcher/settings_dialog.h launcher/rom_browser_dialog.h launcher/mainwindow.h
 LAUNCHER_MOC_SRCS = $(LAUNCHER_MOC_HEADERS:launcher/%.h=launcher/moc_%.cpp)
 LAUNCHER_OBJS = $(LAUNCHER_SRCS:.cpp=.o) $(LAUNCHER_MOC_SRCS:.cpp=.o) \
                 unzip.o $(filter zlib/%,$(OBJS))
@@ -167,7 +168,9 @@ launcher/moc_%.cpp: launcher/%.h
 
 launcher/%.o: launcher/%.cpp
 	@echo Compiling Launcher $<
-	@$(CXX) -std=c++17 -Wall -O2 -fPIC -I. -Izlib $(QT_CFLAGS) -c $< -o $@
+	@$(CXX) -std=c++17 -Wall -g -O2 -fPIC -MMD -MP -I. -Izlib $(QT_CFLAGS) -c $< -o $@
+
+-include launcher/*.d
 
 launcher: $(LAUNCHER_EXE)
 
@@ -180,7 +183,7 @@ depend:
 
 clean:
 	rm -f lib$(EXE).a $(OBJS) $(CUIOBJS) $(EXE) *.bak cpu/*.bak boards/*.bak sound/*.bak \
-	      $(LAUNCHER_EXE) launcher/*.o launcher/moc_*.cpp
+	      $(LAUNCHER_EXE) launcher/*.o launcher/*.d launcher/moc_*.cpp
 
 # DO NOT DELETE
 

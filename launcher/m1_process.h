@@ -16,10 +16,10 @@ public:
     QString currentRom() const { return m_currentRom; }
 
     // バックグラウンドプロセス起動 (GUI操作用)
-    void play(const QString &m1BinPath, const QString &romName, const QStringList &extraArgs = QStringList());
+    void play(const QString &m1BinPath, const QString &romName, int songNum = -1, const QStringList &extraArgs = QStringList());
 
     // 外部ターミナルで起動 (コンソール直接操作用)
-    void playInTerminal(const QString &m1BinPath, const QString &romName, const QStringList &extraArgs = QStringList());
+    void playInTerminal(const QString &m1BinPath, const QString &romName, int songNum = -1, const QStringList &extraArgs = QStringList());
 
     // コマンド送信
     void sendCommand(char key);
@@ -34,6 +34,7 @@ signals:
     void finished(int exitCode);
     void logOutput(const QString &text);
     void songChanged(int songNum, const QString &trackName);
+    void hardwareInfoDetected(const QString &driver, const QString &hardware);
     void errorOccurred(const QString &error);
 
 private slots:
@@ -49,4 +50,6 @@ private:
     QString m_currentRom;
     bool m_stoppingByUser = false;
     bool m_externalTerminal = false;
+    QString m_currentDriver;
+    QString m_currentHardware;
 };

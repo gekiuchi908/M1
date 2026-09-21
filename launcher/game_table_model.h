@@ -32,6 +32,7 @@ public:
     void updateBatch(const std::vector<VerifiedItem> &items);
     const GameEntry &getGame(int index) const;
     const std::vector<GameEntry> &games() const { return m_games; }
+    void refreshTranslations();
 
 private:
     std::vector<GameEntry> m_games;

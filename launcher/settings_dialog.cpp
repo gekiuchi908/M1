@@ -1,65 +1,126 @@
 #include "settings_dialog.h"
+#include "i18n.h"
+
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
+#include <QLabel>
 #include <QPushButton>
 #include <QFileDialog>
 #include <QDialogButtonBox>
 
 SettingsDialog::SettingsDialog(QWidget *parent) : QDialog(parent) {
-    setWindowTitle("M1 ランチャー設定");
-    resize(520, 280);
+    resize(540, 320);
 
     QFormLayout *form = new QFormLayout();
 
+    // 言語設定
+    m_langLabel = new QLabel(this);
+    m_languageCombo = new QComboBox(this);
+    m_languageCombo->addItem("English", "en");
+    m_languageCombo->addItem("Japanese (日本語)", "jp");
+    form->addRow(m_langLabel, m_languageCombo);
+
     // ROM パス
+    m_romDirLabel = new QLabel(this);
     QHBoxLayout *romLayout = new QHBoxLayout();
     m_romPathEdit = new QLineEdit(this);
-    QPushButton *romBrowseBtn = new QPushButton("参照...", this);
+    m_romBrowseBtn = new QPushButton(this);
     romLayout->addWidget(m_romPathEdit);
-    romLayout->addWidget(romBrowseBtn);
-    form->addRow("ROM ディレクトリ:", romLayout);
+    romLayout->addWidget(m_romBrowseBtn);
+    form->addRow(m_romDirLabel, romLayout);
 
     // M1 実行ファイルパス
+    m_m1BinLabel = new QLabel(this);
     QHBoxLayout *binLayout = new QHBoxLayout();
     m_m1BinEdit = new QLineEdit(this);
-    QPushButton *binBrowseBtn = new QPushButton("参照...", this);
+    m_binBrowseBtn = new QPushButton(this);
     binLayout->addWidget(m_m1BinEdit);
-    binLayout->addWidget(binBrowseBtn);
-    form->addRow("M1 実行ファイル:", binLayout);
+    binLayout->addWidget(m_binBrowseBtn);
+    form->addRow(m_m1BinLabel, binLayout);
 
-    // サウンドドライバ (PulseAudio 推奨)
+    // サウンドドライバ
+    m_driverLabel = new QLabel(this);
     m_driverCombo = new QComboBox(this);
-    m_driverCombo->addItem("3: PulseAudio (推奨・標準)", 3);
+    m_driverCombo->addItem(I18n::driverPulseAudio(), 3);
     m_driverCombo->addItem("1: ALSA", 1);
     m_driverCombo->addItem("0: SDL", 0);
     m_driverCombo->addItem("2: OSS", 2);
-    form->addRow("オーディオ出力 (-s):", m_driverCombo);
+    form->addRow(m_driverLabel, m_driverCombo);
 
     // サンプルレート
+    m_sampleRateLabel = new QLabel(this);
     m_sampleRateCombo = new QComboBox(this);
-    m_sampleRateCombo->addItem("44100 Hz (標準)", 44100);
+    m_sampleRateCombo->addItem(I18n::sampleRateDefault(), 44100);
     m_sampleRateCombo->addItem("48000 Hz", 48000);
     m_sampleRateCombo->addItem("22050 Hz", 22050);
-    form->addRow("サンプルレート (-r):", m_sampleRateCombo);
+    form->addRow(m_sampleRateLabel, m_sampleRateCombo);
 
     // 外部ターミナル起動
-    m_terminalCheck = new QCheckBox("M1 を外部ターミナルウィンドウで起動する", this);
-    m_terminalCheck->setToolTip("チェックすると、別ウィンドウのコンソール（x-terminal-emulator等）で M1 を開き、キーボードで直接操作できます。");
-    form->addRow("実行モード:", m_terminalCheck);
+    m_execModeLabel = new QLabel(this);
+    m_terminalCheck = new QCheckBox(this);
+    form->addRow(m_execModeLabel, m_terminalCheck);
 
-    connect(romBrowseBtn, &QPushButton::clicked, this, &SettingsDialog::onBrowseRomPath);
-    connect(binBrowseBtn, &QPushButton::clicked, this, &SettingsDialog::onBrowseM1Bin);
+    connect(m_romBrowseBtn, &QPushButton::clicked, this, &SettingsDialog::onBrowseRomPath);
+    connect(m_binBrowseBtn, &QPushButton::clicked, this, &SettingsDialog::onBrowseM1Bin);
+    connect(m_languageCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &SettingsDialog::onLanguageChanged);
 
     // ボタンボックス
-    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
-    connect(btnBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
-    connect(btnBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    m_btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    connect(m_btnBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(m_btnBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addLayout(form);
     mainLayout->addStretch();
-    mainLayout->addWidget(btnBox);
+    mainLayout->addWidget(m_btnBox);
+
+    // 初期言語を現在の I18n 設定から反映
+    setLanguage(I18n::language());
+    retranslateUi();
+}
+
+void SettingsDialog::retranslateUi() {
+    setWindowTitle(I18n::settingsTitle());
+    m_langLabel->setText(I18n::langLabel());
+    m_romDirLabel->setText(I18n::romDirLabel());
+    m_romBrowseBtn->setText(I18n::browseBtn());
+    m_m1BinLabel->setText(I18n::m1BinLabel());
+    m_binBrowseBtn->setText(I18n::browseBtn());
+    m_driverLabel->setText(I18n::audioOutputLabel());
+    m_sampleRateLabel->setText(I18n::sampleRateLabel());
+    m_execModeLabel->setText(I18n::execModeLabel());
+    m_terminalCheck->setText(I18n::terminalCheckText());
+    m_terminalCheck->setToolTip(I18n::terminalCheckTooltip());
+
+    // ドライバ PulseAudio ラベルの更新
+    int paIdx = m_driverCombo->findData(3);
+    if (paIdx >= 0) {
+        m_driverCombo->setItemText(paIdx, I18n::driverPulseAudio());
+    }
+
+    // サンプルレート 44100Hz ラベルの更新
+    int srIdx = m_sampleRateCombo->findData(44100);
+    if (srIdx >= 0) {
+        m_sampleRateCombo->setItemText(srIdx, I18n::sampleRateDefault());
+    }
+}
+
+void SettingsDialog::onLanguageChanged(int index) {
+    QString lang = m_languageCombo->itemData(index).toString();
+    I18n::setLanguage(lang);
+    retranslateUi();
+}
+
+void SettingsDialog::setLanguage(const QString &lang) {
+    int idx = m_languageCombo->findData(lang);
+    if (idx >= 0) {
+        m_languageCombo->setCurrentIndex(idx);
+    }
+}
+
+QString SettingsDialog::language() const {
+    return m_languageCombo->currentData().toString();
 }
 
 void SettingsDialog::setRomPath(const QString &path) {
@@ -105,14 +166,14 @@ bool SettingsDialog::useTerminal() const {
 }
 
 void SettingsDialog::onBrowseRomPath() {
-    QString dir = QFileDialog::getExistingDirectory(this, "ROM ディレクトリを選択", m_romPathEdit->text());
+    QString dir = QFileDialog::getExistingDirectory(this, I18n::browseRomDialogTitle(), m_romPathEdit->text());
     if (!dir.isEmpty()) {
         m_romPathEdit->setText(dir);
     }
 }
 
 void SettingsDialog::onBrowseM1Bin() {
-    QString file = QFileDialog::getOpenFileName(this, "M1 実行ファイルを選択", m_m1BinEdit->text(), "Executables (*);;All Files (*)");
+    QString file = QFileDialog::getOpenFileName(this, I18n::browseM1BinDialogTitle(), m_m1BinEdit->text(), "Executables (*);;All Files (*)");
     if (!file.isEmpty()) {
         m_m1BinEdit->setText(file);
     }

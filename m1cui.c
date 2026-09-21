@@ -413,11 +413,12 @@ static int m1ui_message(void *this, int message, char *txt, int iparm)
 static void usage(char *appname)
 {
 	printf("\nM1 usage:\n");
-	printf("%s [-a] [-b] [-i] [-l] [-n] [-r] [-t] [-w] gamename\n", appname);
+	printf("%s [-a] [-b] [-i] [-j] [-l] [-n] [-r] [-t] [-w] gamename\n", appname);
 	printf("-a: disable album mode (use of .lst files)\n");
 	printf("-b: list all supported games by board\n");
 	printf("-d: list all ROM info for each game, compatible with MAME -listinfo\n");
 	printf("-i: show ROM info for the game\n");
+	printf("-j: use Japanese track lists (lists/jp/)\n");
 	printf("-l: list all supported games\n");
 	printf("-mN: set headphone mix (opposite channel blend).  0 = full stereo, 100 = full mono\n");
 	printf("-n: don't normalize the sound\n");
@@ -501,6 +502,9 @@ static void listinfo(void)
 
 int main(int argc, char *argv[])
 {
+	setvbuf(stdout, NULL, _IONBF, 0);
+	setvbuf(stderr, NULL, _IONBF, 0);
+
 	long i, j, info;
 	char *eptr;
 	char ch = 0;
@@ -726,6 +730,11 @@ int main(int argc, char *argv[])
 				case 'i':
 				case 'I':
 					info = 1;
+					break;
+
+				case 'j':
+				case 'J':
+					m1snd_setoption(M1_OPT_LANGUAGE, M1_LANG_JP);
 					break;
 
 				default:

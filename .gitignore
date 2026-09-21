@@ -1,5 +1,6 @@
 .cecli*
 m1-launcher
 launcher/*.o
+launcher/*.d
 launcher/moc_*.cpp
 m1-launcher.ini
