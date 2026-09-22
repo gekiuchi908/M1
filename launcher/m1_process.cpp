@@ -44,7 +44,7 @@ void M1Process::play(const QString &m1BinPath, const QString &romName, int songN
 
     QStringList args = extraArgs;
     args << romName;
-    if (songNum > 0) {
+    if (songNum >= 0) {
         args << QString::number(songNum);
     }
 
@@ -88,7 +88,7 @@ void M1Process::playInTerminal(const QString &m1BinPath, const QString &romName,
 
     QStringList cmdArgs = extraArgs;
     cmdArgs << romName;
-    if (songNum > 0) {
+    if (songNum >= 0) {
         cmdArgs << QString::number(songNum);
     }
 

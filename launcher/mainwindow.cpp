@@ -382,7 +382,7 @@ void MainWindow::onReloadTrackListClicked() {
         }
     }
 
-    if (m_currentSongNum > 0) {
+    if (m_currentSongNum >= 0) {
         highlightTrack(m_currentSongNum);
     }
 }
@@ -395,14 +395,14 @@ void MainWindow::playGame(const GameEntry &game, int songNum) {
         onReloadTrackListClicked();
     }
 
-    if (songNum <= 0) {
-        if (m_trackData.defaultSong > 0) {
+    if (songNum < 0) {
+        if (m_trackData.defaultSong >= 0) {
             songNum = m_trackData.defaultSong;
-        } else if (m_currentGame.defaultCmd > 0) {
+        } else if (m_currentGame.defaultCmd >= 0) {
             songNum = m_currentGame.defaultCmd;
         } else if (!m_trackData.items.empty()) {
             for (const auto &it : m_trackData.items) {
-                if (!it.isSeparator && it.songNum > 0) {
+                if (!it.isSeparator && it.songNum >= 0) {
                     songNum = it.songNum;
                     break;
                 }
@@ -449,7 +449,7 @@ void MainWindow::onPlayClicked() {
         onSelectGameClicked();
         return;
     }
-    playGame(m_currentGame, m_currentSongNum > 0 ? m_currentSongNum : m_currentGame.defaultCmd);
+    playGame(m_currentGame, m_currentSongNum >= 0 ? m_currentSongNum : m_currentGame.defaultCmd);
 }
 
 void MainWindow::onStopClicked() {
@@ -496,7 +496,7 @@ void MainWindow::onRestartTrackClicked() {
 void MainWindow::onTrackItemDoubleClicked(QListWidgetItem *item) {
     if (!item) return;
     int songNum = item->data(Qt::UserRole).toInt();
-    if (songNum > 0 && !m_currentGame.name.empty()) {
+    if (songNum >= 0 && !m_currentGame.name.empty()) {
         playGame(m_currentGame, songNum);
     }
 }
@@ -524,7 +524,7 @@ void MainWindow::updateModeButtonsStyle() {
 }
 
 int MainWindow::getCurrentTrackDuration() const {
-    if (m_currentSongNum <= 0) return 0;
+    if (m_currentSongNum < 0) return 0;
     for (const auto &it : m_trackData.items) {
         if (!it.isSeparator && it.songNum == m_currentSongNum) {
             if (it.time.isEmpty()) return 0;
@@ -586,7 +586,7 @@ void MainWindow::updateLcdDisplay() {
     }
 
     // トラック情報
-    if (m_currentSongNum > 0) {
+    if (m_currentSongNum >= 0) {
         QString trkName;
         QString trkTime;
         for (const auto &it : m_trackData.items) {

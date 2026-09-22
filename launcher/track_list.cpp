@@ -175,7 +175,7 @@ TrackListData TrackListParser::load(const QString &romName, int minCmd, int maxC
     }
 
     // .lst が見つからない場合は minCmd 〜 maxCmd から曲番号リストを生成
-    if (minCmd > 0 && maxCmd >= minCmd) {
+    if (minCmd >= 0 && maxCmd >= minCmd) {
         for (int cmd = minCmd; cmd <= maxCmd; ++cmd) {
             TrackItem item;
             item.songNum = cmd;
