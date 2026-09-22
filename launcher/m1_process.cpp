@@ -187,6 +187,14 @@ void M1Process::parseOutputLine(const QString &line) {
         return;
     }
 
+    static QRegularExpression rxStop("^Stopping song #(\\d+)(?:\\s*\\(silence detected\\))?");
+    auto matchStop = rxStop.match(line);
+    if (matchStop.hasMatch()) {
+        int songNum = matchStop.captured(1).toInt();
+        emit songStopped(songNum);
+        return;
+    }
+
     static QRegularExpression rxDrv("^Driver:\\s*(.*)$");
     auto matchDrv = rxDrv.match(line);
     if (matchDrv.hasMatch()) {

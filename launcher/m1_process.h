@@ -34,6 +34,7 @@ signals:
     void finished(int exitCode);
     void logOutput(const QString &text);
     void songChanged(int songNum, const QString &trackName);
+    void songStopped(int songNum);
     void hardwareInfoDetected(const QString &driver, const QString &hardware);
     void errorOccurred(const QString &error);
 

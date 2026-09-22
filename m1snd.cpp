@@ -35,6 +35,7 @@ static int dsppos;
 int boardtype;
 static BoardT *cur_board = (BoardT *)NULL;
 static int silencecount;
+static int song_silence_reported = 0;
 static int retrigger = 0, retriggernow = 0;
 static int max = 0, min = 0;
 static int bNormalize = 1;
@@ -260,18 +261,23 @@ DLLEXPORT void m1snd_do_frame(unsigned long dwSamples, signed short *out)
 	// let the UI do vu meters or whatever
 	m1ui_message(m1ui_this, M1_MSG_WAVEDATA, (char *)&out[0], dwSamples);
 
-	if ((silent) && !m1snd_getQueueBootTime())
+	if ((silent == 1) && !m1snd_getQueueBootTime())
 	{
 		silencecount++;
 
 		if (silencecount >= 3*60)
 		{
-			// tell the UI we're silent in case it wants to deal
-			m1ui_message(m1ui_this, M1_MSG_SILENCE, NULL, 0);
+			if (!song_silence_reported)
+			{
+				song_silence_reported = 1;
+				// tell the UI we're silent in case it wants to deal
+				m1ui_message(m1ui_this, M1_MSG_SILENCE, NULL, 0);
+			}
 
 			if (retrigger)
 			{
 				retriggernow = 1;
+				song_silence_reported = 0;
 			}
 			silencecount = 0;
 		}
@@ -279,6 +285,10 @@ DLLEXPORT void m1snd_do_frame(unsigned long dwSamples, signed short *out)
 	else
 	{
 		silencecount = 0;
+		if (silent == 0)
+		{
+			song_silence_reported = 0;
+		}
 	}
 
 	songtime++;	// one more frame elapsed
@@ -518,6 +528,8 @@ static int start_board(void)
 
 	// reset play time
 	songtime = 0;
+	silencecount = 0;
+	song_silence_reported = 0;
 
 	return 0;
 }
@@ -527,6 +539,7 @@ static void m1snd_initnewgame(void)
 	waveLogInit(wavelog, games[curgame].zipname, cmd1);
 
 	silencecount = 0;
+	song_silence_reported = 0;
 	retriggernow = 0;
 
 	m1snd_startQueue();
@@ -887,6 +900,8 @@ DLLEXPORT int m1snd_run(int command, int iparm)
 					m1snd_addToCmdQueue(cmd1);
 					m1ui_message(m1ui_this, M1_MSG_STARTINGSONG, NULL, cmd1);
 					songtime = 0;
+					silencecount = 0;
+					song_silence_reported = 0;
 					m1snd_update_cur_track_fade();
 				}
 			}

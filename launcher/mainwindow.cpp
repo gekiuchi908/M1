@@ -35,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_m1Process, &M1Process::finished, this, &MainWindow::onM1Finished);
     connect(m_m1Process, &M1Process::logOutput, this, &MainWindow::onM1LogOutput);
     connect(m_m1Process, &M1Process::songChanged, this, &MainWindow::onM1SongChanged);
+    connect(m_m1Process, &M1Process::songStopped, this, &MainWindow::onM1SongStopped);
     connect(m_m1Process, &M1Process::hardwareInfoDetected, this, &MainWindow::onM1HardwareInfoDetected);
     connect(m_m1Process, &M1Process::errorOccurred, this, &MainWindow::onM1ErrorOccurred);
 
@@ -429,6 +430,7 @@ void MainWindow::playGame(const GameEntry &game, int songNum) {
 
     m_logView->clear();
     m_isPaused = false;
+    m_isSongFinished = false;
     m_elapsedSeconds = 0;
     m_autoSkipTriggered = false;
     m_currentSongNum = songNum;
@@ -458,12 +460,16 @@ void MainWindow::onStopClicked() {
 
 void MainWindow::onPrevTrackClicked() {
     m_elapsedSeconds = 0;
+    m_isSongFinished = false;
+    m_playTimer->start();
     updateLcdDisplay();
     m_m1Process->prevTrack();
 }
 
 void MainWindow::onNextTrackClicked() {
     m_elapsedSeconds = 0;
+    m_isSongFinished = false;
+    m_playTimer->start();
     updateLcdDisplay();
     m_m1Process->nextTrack();
 }
@@ -482,6 +488,8 @@ void MainWindow::onPauseToggleClicked() {
 void MainWindow::onRestartTrackClicked() {
     m_m1Process->restartTrack();
     m_elapsedSeconds = 0;
+    m_isSongFinished = false;
+    m_playTimer->start();
     updateLcdDisplay();
 }
 
@@ -540,6 +548,7 @@ int MainWindow::getCurrentTrackDuration() const {
 }
 
 void MainWindow::onPlayTimerTick() {
+    if (m_isSongFinished) return;
     m_elapsedSeconds++;
     updateLcdDisplay();
 
@@ -556,7 +565,7 @@ void MainWindow::onPlayTimerTick() {
 void MainWindow::updateLcdDisplay() {
     // タイム表示
     QString stateIcon = "■";
-    if (m_m1Process->isRunning()) {
+    if (m_m1Process->isRunning() && !m_isSongFinished) {
         stateIcon = m_isPaused ? "⏸" : "▶";
     }
 
@@ -666,6 +675,7 @@ void MainWindow::onM1Finished(int exitCode) {
 
     m_playTimer->stop();
     m_isPaused = false;
+    m_isSongFinished = false;
     updateLcdDisplay();
 }
 
@@ -677,9 +687,34 @@ void MainWindow::onM1SongChanged(int songNum, const QString &trackName) {
     Q_UNUSED(trackName);
     m_currentSongNum = songNum;
     m_elapsedSeconds = 0;
+    m_isSongFinished = false;
     m_autoSkipTriggered = false;
+    if (m_m1Process->isRunning() && !m_isPaused) {
+        m_playTimer->start();
+    }
     updateLcdDisplay();
     highlightTrack(songNum);
+}
+
+void MainWindow::onM1SongStopped(int songNum) {
+    if (songNum != m_currentSongNum || !m_m1Process->isRunning()) return;
+
+    m_isSongFinished = true;
+    m_playTimer->stop();
+
+    // 3秒の無音判定時間を差し引いて実際の音の停止時点を表示
+    if (m_elapsedSeconds >= 3) {
+        m_elapsedSeconds -= 3;
+    } else {
+        m_elapsedSeconds = 0;
+    }
+    updateLcdDisplay();
+
+    // Auto Moving (NEXT) がONの場合は自動的に次の曲へ送る
+    if (m_autoNext && !m_autoSkipTriggered) {
+        m_autoSkipTriggered = true;
+        QTimer::singleShot(500, this, &MainWindow::onNextTrackClicked);
+    }
 }
 
 void MainWindow::onM1HardwareInfoDetected(const QString &driver, const QString &hardware) {

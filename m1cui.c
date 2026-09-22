@@ -64,6 +64,15 @@ static int max_games;
 static int quit;
 static char *rompath, *wavpath;
 
+static int is_tty = 0;
+static int cur_song_num = -1;
+static char cur_song_name[512] = "";
+static int cur_song_stopped = 0;
+static int cur_song_stop_sec = 0;
+static int last_display_sec = -1;
+static int line_needs_newline = 0;
+static int stdin_eof = 0;
+
 static int m1ui_message(void *this, int message, char *txt, int iparm);
 
 // Private functions
@@ -296,10 +305,21 @@ static int m1ui_message(void *this, int message, char *txt, int iparm)
 
 		// called when a song is (re)triggered
 		case M1_MSG_STARTINGSONG:
+			if (is_tty && line_needs_newline)
+			{
+				printf("\n");
+				line_needs_newline = 0;
+			}
+
 			curgame = m1snd_get_info_int(M1_IINF_CURGAME, 0);
+			cur_song_num = iparm;
+			cur_song_stopped = 0;
+			cur_song_stop_sec = 0;
+			last_display_sec = -1;
+
 			if (m1snd_get_info_str_ex(M1_SINF_EX_TRKNAME, curgame, iparm, 0) == (char *)NULL)
 			{
-				printf("Starting song #%d\n", iparm);
+				cur_song_name[0] = '\0';
 			}
 			else
 			{
@@ -313,10 +333,12 @@ static int m1ui_message(void *this, int message, char *txt, int iparm)
 				char_conv(rawname, transname, 512);
 				#else	// pass-through
 				rawname = m1snd_get_info_str_ex(M1_SINF_EX_TRKNAME, curgame, iparm, 0);
-				strcpy(transname, rawname);
+				strncpy(transname, rawname, sizeof(transname)-1);
+				transname[sizeof(transname)-1] = '\0';
 				#endif
 
-				printf("Starting song #%d: %s\n", iparm, transname);
+				strncpy(cur_song_name, transname, sizeof(cur_song_name)-1);
+				cur_song_name[sizeof(cur_song_name)-1] = '\0';
 
 				if (m1snd_get_info_int(M1_IINF_NUMEXTRAS, (iparm<<16) | curgame) > 0)
 				{
@@ -333,6 +355,32 @@ static int m1ui_message(void *this, int message, char *txt, int iparm)
 					}
 					printf("\n");
 				}
+			}
+
+			if (is_tty)
+			{
+				if (cur_song_name[0] != '\0')
+				{
+					printf("Starting song #%d: %s  [00:00]", cur_song_num, cur_song_name);
+				}
+				else
+				{
+					printf("Starting song #%d  [00:00]", cur_song_num);
+				}
+				fflush(stdout);
+				line_needs_newline = 1;
+			}
+			else
+			{
+				if (cur_song_name[0] != '\0')
+				{
+					printf("Starting song #%d: %s\n", cur_song_num, cur_song_name);
+				}
+				else
+				{
+					printf("Starting song #%d\n", cur_song_num);
+				}
+				fflush(stdout);
 			}
 			break;
 
@@ -379,8 +427,38 @@ static int m1ui_message(void *this, int message, char *txt, int iparm)
 			#endif
 			break;
 
-		// called when there's been at least 2 seconds of silence
+		// called when there's been at least 3 seconds of silence
 		case M1_MSG_SILENCE:
+			if (!cur_song_stopped)
+			{
+				cur_song_stopped = 1;
+				int cur_time = m1snd_get_info_int(M1_IINF_CURTIME, 0);
+				int stop_frames = cur_time - 3 * 60;
+				if (stop_frames < 0) stop_frames = 0;
+				cur_song_stop_sec = stop_frames / 60;
+
+				int mm = cur_song_stop_sec / 60;
+				int ss = cur_song_stop_sec % 60;
+
+				if (is_tty)
+				{
+					if (cur_song_name[0] != '\0')
+					{
+						printf("\rStarting song #%d: %s  [%02d:%02d] (Stopped)\n", cur_song_num, cur_song_name, mm, ss);
+					}
+					else
+					{
+						printf("\rStarting song #%d  [%02d:%02d] (Stopped)\n", cur_song_num, mm, ss);
+					}
+					fflush(stdout);
+					line_needs_newline = 0;
+				}
+				else
+				{
+					printf("Stopping song #%d (silence detected)\n", cur_song_num);
+					fflush(stdout);
+				}
+			}
 			break;
 
 		// called to let the UI do vu meters/spectrum analyzers/etc
@@ -531,6 +609,7 @@ int main(int argc, char *argv[])
 	info = 0;
 	shownorm = 0;
 	lastnorm = -1;
+	is_tty = isatty(STDOUT_FILENO);
 
 	m1snd_init(NULL, m1ui_message);
 	max_games = m1snd_get_info_int(M1_IINF_TOTALGAMES, 0);
@@ -824,17 +903,34 @@ int main(int argc, char *argv[])
 		}
 		#endif
 		#if __linux__ || MACOS
-		fds = STDIN_FILENO;
-		FD_ZERO(&watchset);
-		FD_SET(fds, &watchset);
-		tv.tv_sec = 0;
-		tv.tv_usec = 16666/8;	// timeout every 1/480th of a second
-		if (select(fds+1, &watchset, NULL, NULL, &tv))
+		if (!stdin_eof)
 		{
-			ch = getchar();	// (blocks until something is pressed)
+			fds = STDIN_FILENO;
+			FD_ZERO(&watchset);
+			FD_SET(fds, &watchset);
+			tv.tv_sec = 0;
+			tv.tv_usec = 16666/8;	// timeout every 1/480th of a second
+			if (select(fds+1, &watchset, NULL, NULL, &tv) > 0)
+			{
+				int c = getchar();
+				if (c == EOF)
+				{
+					stdin_eof = 1;
+					ch = 0;
+				}
+				else
+				{
+					ch = (char)c;
+				}
+			}
+			else
+			{
+				ch = 0;
+			}
 		}
 		else
 		{
+			usleep(16666/8);
 			ch = 0;
 		}
 		#endif
@@ -861,6 +957,27 @@ int main(int argc, char *argv[])
 			case 0:	// do idle-time processing
 				m1snd_run(M1_CMD_IDLE, 0);
 
+				if (is_tty && !cur_song_stopped && cur_song_num >= 0 && !pause)
+				{
+					int cur_time = m1snd_get_info_int(M1_IINF_CURTIME, 0);
+					int sec = cur_time / 60;
+					if (sec != last_display_sec)
+					{
+						last_display_sec = sec;
+						int mm = sec / 60;
+						int ss = sec % 60;
+						if (cur_song_name[0] != '\0')
+						{
+							printf("\rStarting song #%d: %s  [%02d:%02d]", cur_song_num, cur_song_name, mm, ss);
+						}
+						else
+						{
+							printf("\rStarting song #%d  [%02d:%02d]", cur_song_num, mm, ss);
+						}
+						fflush(stdout);
+					}
+				}
+
 				// if -o (observe calculated normalization volumes) is on...
 				if (shownorm)
 				{
@@ -883,10 +1000,27 @@ int main(int argc, char *argv[])
 				if (pause)
 				{
 					m1snd_run(M1_CMD_PAUSE, 0);
+					if (is_tty && !cur_song_stopped && cur_song_num >= 0)
+					{
+						int cur_time = m1snd_get_info_int(M1_IINF_CURTIME, 0);
+						int sec = cur_time / 60;
+						int mm = sec / 60;
+						int ss = sec % 60;
+						if (cur_song_name[0] != '\0')
+						{
+							printf("\rStarting song #%d: %s  [%02d:%02d] (Paused)", cur_song_num, cur_song_name, mm, ss);
+						}
+						else
+						{
+							printf("\rStarting song #%d  [%02d:%02d] (Paused)", cur_song_num, mm, ss);
+						}
+						fflush(stdout);
+					}
 				}
 				else
 				{
 					m1snd_run(M1_CMD_UNPAUSE, 0);
+					last_display_sec = -1;
 				}
 				break;
 

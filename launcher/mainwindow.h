@@ -53,6 +53,7 @@ private slots:
     void onM1Finished(int exitCode);
     void onM1LogOutput(const QString &text);
     void onM1SongChanged(int songNum, const QString &trackName);
+    void onM1SongStopped(int songNum);
     void onM1HardwareInfoDetected(const QString &driver, const QString &hardware);
     void onM1ErrorOccurred(const QString &error);
 
@@ -106,6 +107,7 @@ private:
     int m_currentSongNum = -1;
     int m_elapsedSeconds = 0;
     bool m_isPaused = false;
+    bool m_isSongFinished = false;
     bool m_autoSkipTriggered = false;
     QString m_detectedDriver;
     QString m_detectedHardware;
