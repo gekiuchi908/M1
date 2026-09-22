@@ -47,9 +47,6 @@ static void RF5C68Update( int num, INT16 **buffer, int length )
 	INT16 *right = buffer[1];
 	int i, j;
 
-	left = buffer[0];
-	right = buffer[1];
-
 	/* start with clean buffers */
 	memset(left, 0, length * sizeof(*left));
 	memset(right, 0, length * sizeof(*right));
@@ -57,6 +54,21 @@ static void RF5C68Update( int num, INT16 **buffer, int length )
 	/* bail if not enabled */
 	if (!chip->enable)
 		return;
+
+	/* 32-bit mixing buffer to prevent 16-bit integer overflow */
+	INT32 mixleft_stack[2048];
+	INT32 mixright_stack[2048];
+	INT32 *mixleft = mixleft_stack;
+	INT32 *mixright = mixright_stack;
+
+	if (length > 2048)
+	{
+		mixleft = (INT32 *)malloc(length * sizeof(INT32));
+		mixright = (INT32 *)malloc(length * sizeof(INT32));
+	}
+
+	memset(mixleft, 0, length * sizeof(INT32));
+	memset(mixright, 0, length * sizeof(INT32));
 
 	/* loop over channels */
 	for (i = 0; i < NUM_CHANNELS; i++)
@@ -91,13 +103,13 @@ static void RF5C68Update( int num, INT16 **buffer, int length )
 				if (sample & 0x80)
 				{
 					sample &= 0x7f;
-					left[j] += (sample * lv) >> 5;
-					right[j] += (sample * rv) >> 5;
+					mixleft[j] += (sample * lv) >> 5;
+					mixright[j] += (sample * rv) >> 5;
 				}
 				else
 				{
-					left[j] -= (sample * lv) >> 5;
-					right[j] -= (sample * rv) >> 5;
+					mixleft[j] -= (sample * lv) >> 5;
+					mixright[j] -= (sample * rv) >> 5;
 				}
 			}
 		}
@@ -108,15 +120,21 @@ static void RF5C68Update( int num, INT16 **buffer, int length )
 	{
 		INT32 temp;
 
-		temp = left[j];
+		temp = mixleft[j];
 		if (temp > 32767) temp = 32767;
 		else if (temp < -32768) temp = -32768;
 		left[j] = temp & ~0x3f;
 
-		temp = right[j];
+		temp = mixright[j];
 		if (temp > 32767) temp = 32767;
 		else if (temp < -32768) temp = -32768;
 		right[j] = temp & ~0x3f;
+	}
+
+	if (length > 2048)
+	{
+		free(mixleft);
+		free(mixright);
 	}
 }
 
