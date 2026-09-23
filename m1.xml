@@ -15980,7 +15980,7 @@
 		<description>The Punisher (World 930422)</description>
 		<year>1993</year>
 		<manufacturer>Capcom</manufacturer>
-		<m1data default="1" stop="65280" min="1" max="32768"/>
+		<m1data default="1" stop="65280" min="1" max="32768" subtype="11"/>
 		<region type="cpu1" size="262144">
 			<rom name="ps_q.5k" size="131072" crc="49ff4446" sha1="87af12f87a940a6c5428b4574ad44a4b54867bc3" offset="0"/>
 		</region>

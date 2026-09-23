@@ -726,22 +726,24 @@ static void ym_writemem(unsigned int address, unsigned int data)
 {
 	if (address == 0x2000)
 	{
-//		printf("%x to 2151 adr\n", data);
 		ym2151_last_adr = data;
 		return;
 	}
 
 	if (address == 0x2001)
 	{
-//		printf("%x to 2151 @ %x\n", data, ym2151_last_adr);
 		YM2151WriteReg(0, ym2151_last_adr, data);
 		return;
 	}
 
 	if (address >= 0x3000 && address <= 0x30ff)
 	{
-//		if (data)
-//		printf("6502: %x to shared @ %x\n", data, address);
+		if ((address == 0x3000) && (data == 0xff))
+		{
+			share_0[0] = 0;
+			workram[0x13a0] = 0;
+			return;
+		}
 		share_0[(address & 0xff)] = data;
 	}
 	
@@ -801,8 +803,6 @@ static void TC2_Write(unsigned int address, unsigned int data)
 {					
 	if (address >= 0x2000 && address <= 0x20ff) 
 	{
-		if (data)
-			printf("%x to 6502 A @ %x\n", data, address);
 		share_0[address&0xff] = data;
 		return;
 	}
@@ -882,30 +882,11 @@ static void s1_timer(int refcon)
 {
 	if (tc2_irqen)
 	{
-		hd63701_set_irq_line(0, ASSERT_LINE);
+		hd63701_set_irq_line(0, HOLD_LINE);
 	}
 
 	// set up for next time
 	timer_set(1.0/60.0, 0, s1_timer);
-#if 0
-	switch (tc2_stage)
-	{
-		case 0:
-			tc2_stage++;
-			break;
-		case 1:
-			workram[0x13a0] = 1;
-			tc2_stage++;
-			break;
-		case 2:
-			workram[0x13a0] = 0;
-			tc2_stage++;
-			break;
-		default:
-			break;
-	}
-#endif
-	share_0[1] = 0x0e;
 }
 
 static void TC2_Init(long srate)
@@ -916,8 +897,6 @@ static void TC2_Init(long srate)
 	LOWROM = INPUT = UNK1 = UNK2 = 0x20000;
 
 	m1snd_addToCmdQueue(0xbeef);	// do boot protocol with MCU
-	m1snd_addToCmdQueue(14);
-	m1snd_addToCmdQueue(0xffff);
 
 	tc2_irqen = 0;
 	tc2_stage = 4;
@@ -927,34 +906,25 @@ static void TC2_Init(long srate)
 
 static void TC2_SendCmd(int cmda, int cmdb)
 {
-	int i;
-
 	if (cmda == 0xbeef)	// boot protocol
 	{
 		workram[0x1183] = 1;
 		return;
 	}
 
-	if (cmda == 0xffff)
+	if (cmda == 0xffff || cmda == 0)
 	{
-		for (i = 0; i < 16; i++)
-		{
-  			workram[0x1286+i] = 0;
-		}
-		workram[0x13a0] = 0;
+		workram[0x13a1] = 0;
+		workram[0x13a0] = 1;
+		share_0[1] = 0;
+		share_0[0] = 1;
 		return;
 	}
 
-	if (cmda < 16)
-	{
-		workram[0x1286+cmda] = 1;
-	}
-	else
-	{
-		workram[0x13a1] = cmda - 15;
-		workram[0x13a0] = 0;
-		tc2_stage = 0;
-	}
+	workram[0x13a1] = cmda;
+	workram[0x13a0] = 1;
+	share_0[1] = cmda;
+	share_0[0] = 1;
 }
 
 M1_BOARD_START( tceptor2 )

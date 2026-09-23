@@ -245,6 +245,8 @@ static UINT32 timer_next;
 			ENTER_INTERRUPT("M6800#%d take IRQ1\n",0xfff8);		\
 			if( m6800.irq_callback )							\
 				(void)(*m6800.irq_callback)(M6800_IRQ_LINE);	\
+			if( m6800.irq_state[M6800_IRQ_LINE] == HOLD_LINE || m6800.irq_state[M6800_IRQ_LINE] == PULSE_LINE ) \
+				m6800.irq_state[M6800_IRQ_LINE] = CLEAR_LINE;	\
 		}														\
 		else													\
 			CHECK_IRQ2;											\
