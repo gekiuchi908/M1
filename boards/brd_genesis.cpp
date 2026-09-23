@@ -842,6 +842,26 @@ static void Gen_SendCmd(int cmda, int cmdb)
 				timer_unspin_cpu(0);	// restart the 68000
 			}
 
+			if (m1snd_get_custom_tag_value("cmdringadr") != 0xffffffff)
+			{
+				int base = m1snd_get_custom_tag_value("cmdringadr");
+				int w = z80_ram[base + 1];
+
+				z80_ram[base + w] = (cmda >> 8) & 0xff;
+				z80_ram[base + w + 1] = cmda & 0xff;
+
+				w = (w + 2) & 0xff;
+				if (w == 0) w = 2;
+				z80_ram[base + 1] = w;
+
+				if (w == z80_ram[base])
+				{
+					int r = (z80_ram[base] + 2) & 0xff;
+					if (r == 0) r = 2;
+					z80_ram[base] = r;
+				}
+			}
+
 			if (m1snd_get_custom_tag_value("trigadr") != 0xffffffff)
 			{
 					z80_ram[m1snd_get_custom_tag_value("trigadr")] = m1snd_get_custom_tag_value("trigval");

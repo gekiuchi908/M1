@@ -8214,7 +8214,7 @@
 		<description>Raiden Trad</description>
 		<year>1990</year>
 		<manufacturer>Micronet/Seibu</manufacturer>
-		<m1data default="272" stop="0" max="65536" subtype="1" init="0x2a9e" cmd2adr="0x1f04" trigadr="0x1f01" trigval="0x06"/>
+		<m1data default="283" stop="512" max="65536" subtype="1" init="0x2a9e" cmdringadr="0x1f00"/>
 		<region type="cpu1" size="4194304">
 			<rom name="g_raid.bin" size="1048576" crc="f839a811" sha1="9d4011d650179c62acdba0ed58143aa77b97d0e9"/>
 		</region>
