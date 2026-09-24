@@ -6054,7 +6054,7 @@
 		<description>Air Diver</description>
 		<year>1990</year>
 		<manufacturer>Shangri-La/Asmik</manufacturer>
-		<m1data default="20" stop="255" min="0" max="255" subtype="1" init="0x1038" cmdadr="0x11" ftrigadr="0x19" ftrigval="0x01" trigadr="0x10" trigval="0x01"/>
+		<m1data default="20" stop="0" min="0" max="255" subtype="1" init="0x1038" cmdadr="0x11" ftrigadr="0x19" ftrigval="0x01" trigadr="0x10" trigval="0x01"/>
 		<region type="cpu1" size="4194304">
 			<rom name="g_adiv.bin" size="524288" crc="2041885e" sha1="0ea311e3ed667d5d8b7ca4fad66f9d069f0bcb77" offset="0"/>
 		</region>
