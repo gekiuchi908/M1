@@ -229,8 +229,15 @@ static void rf5c400_update(int num, INT16 **outbuf, int length)
 
 	for (i=0; i < length; i++)
 	{
-		outbuf[0][i] = buffer[0][i]>>4;
-		outbuf[1][i] = buffer[1][i]>>4;
+		INT32 val0 = buffer[0][i] >> 4;
+		if (val0 > 32767) val0 = 32767;
+		else if (val0 < -32768) val0 = -32768;
+		outbuf[0][i] = val0;
+
+		INT32 val1 = buffer[1][i] >> 4;
+		if (val1 > 32767) val1 = 32767;
+		else if (val1 < -32768) val1 = -32768;
+		outbuf[1][i] = val1;
 	}
 }
 

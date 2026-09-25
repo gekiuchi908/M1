@@ -401,15 +401,27 @@ void qsound_update( int num, INT16 **buffer, int length )
 
 	datap[0] = buffer[0];
 	datap[1] = buffer[1];
-	memset( datap[0], 0x00, length * sizeof(QSOUND_SAMPLE) );
-	memset( datap[1], 0x00, length * sizeof(QSOUND_SAMPLE) );
+
+	INT32 mix_stack[2][2048];
+	INT32 *mix[2];
+	mix[0] = mix_stack[0];
+	mix[1] = mix_stack[1];
+
+	if (length > 2048)
+	{
+		mix[0] = (INT32 *)malloc(length * sizeof(INT32));
+		mix[1] = (INT32 *)malloc(length * sizeof(INT32));
+	}
+
+	memset( mix[0], 0x00, length * sizeof(INT32) );
+	memset( mix[1], 0x00, length * sizeof(INT32) );
 
 	for (i=0; i<QSOUND_CHANNELS; i++)
 	{
 		if (pC->key)
 		{
-			QSOUND_SAMPLE *pOutL=datap[0];
-			QSOUND_SAMPLE *pOutR=datap[1];
+			INT32 *pOutL=mix[0];
+			INT32 *pOutR=mix[1];
 			pST=qsound_sample_rom+pC->bank;
 			rvol=(pC->rvol*pC->vol)>>(8*LENGTH_DIV);
 			lvol=(pC->lvol*pC->vol)>>(8*LENGTH_DIV);
@@ -443,6 +455,25 @@ void qsound_update( int num, INT16 **buffer, int length )
 			}
 		}
 		pC++;
+	}
+
+	for (i = 0; i < length; i++)
+	{
+		INT32 val0 = mix[0][i];
+		if (val0 > 32767) val0 = 32767;
+		else if (val0 < -32768) val0 = -32768;
+		datap[0][i] = val0;
+
+		INT32 val1 = mix[1][i];
+		if (val1 > 32767) val1 = 32767;
+		else if (val1 < -32768) val1 = -32768;
+		datap[1][i] = val1;
+	}
+
+	if (length > 2048)
+	{
+		free(mix[0]);
+		free(mix[1]);
 	}
 
 #if LOG_WAVE

@@ -354,10 +354,27 @@ static void c352_update(int num, short **buf, int sample_count)
 
 	for(i = 0 ; i < sample_count ; i++) 
 	{
-		*bufferl++ = (short) (C352s[0].channel_l[i] >>3);
-		*bufferr++ = (short) (C352s[0].channel_r[i] >>3);
-		*bufferl2++ = (short) (C352s[0].channel_l2[i] >>3);
-		*bufferr2++ = (short) (C352s[0].channel_r2[i] >>3);
+		long val;
+
+		val = C352s[0].channel_l[i] >> 3;
+		if (val > 32767) val = 32767;
+		else if (val < -32768) val = -32768;
+		*bufferl++ = (short)val;
+
+		val = C352s[0].channel_r[i] >> 3;
+		if (val > 32767) val = 32767;
+		else if (val < -32768) val = -32768;
+		*bufferr++ = (short)val;
+
+		val = C352s[0].channel_l2[i] >> 3;
+		if (val > 32767) val = 32767;
+		else if (val < -32768) val = -32768;
+		*bufferl2++ = (short)val;
+
+		val = C352s[0].channel_r2[i] >> 3;
+		if (val > 32767) val = 32767;
+		else if (val < -32768) val = -32768;
+		*bufferr2++ = (short)val;
 	}
 }
 

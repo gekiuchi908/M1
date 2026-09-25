@@ -18,8 +18,19 @@ struct segapcm
 static void SEGAPCM_update(int num, INT16 **buffer, int length)
 {
 	int ch;
-	memset(buffer[0], 0, length*2);
-	memset(buffer[1], 0, length*2);
+	INT32 mixleft_stack[2048];
+	INT32 mixright_stack[2048];
+	INT32 *mixleft = mixleft_stack;
+	INT32 *mixright = mixright_stack;
+
+	if (length > 2048)
+	{
+		mixleft = (INT32 *)malloc(length * sizeof(INT32));
+		mixright = (INT32 *)malloc(length * sizeof(INT32));
+	}
+
+	memset(mixleft, 0, length * sizeof(INT32));
+	memset(mixright, 0, length * sizeof(INT32));
 
 	for(ch=0; ch<16; ch++)
 		if(!(spcm.ram[0x86+8*ch] & 1)) {
@@ -46,8 +57,8 @@ static void SEGAPCM_update(int num, INT16 **buffer, int length)
 					}
 				}
 				v = rom[addr>>16] - 0x80;
-				buffer[0][i] += (v*voll);
-				buffer[1][i] += (v*volr);
+				mixleft[i] += (v*voll);
+				mixright[i] += (v*volr);
 				addr += step;
 			}
 			base[0x86] = flags;
@@ -55,6 +66,25 @@ static void SEGAPCM_update(int num, INT16 **buffer, int length)
 			base[5] = addr >> 24;
 			spcm.low[ch] = flags & 1 ? 0 : addr;
 		}
+
+	for (ch = 0; ch < length; ch++)
+	{
+		INT32 val = mixleft[ch];
+		if (val > 32767) val = 32767;
+		else if (val < -32768) val = -32768;
+		buffer[0][ch] = val;
+
+		val = mixright[ch];
+		if (val > 32767) val = 32767;
+		else if (val < -32768) val = -32768;
+		buffer[1][ch] = val;
+	}
+
+	if (length > 2048)
+	{
+		free(mixleft);
+		free(mixright);
+	}
 }
 
 int SEGAPCM_sh_start( const struct MachineSound *msound )

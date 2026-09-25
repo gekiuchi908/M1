@@ -302,8 +302,15 @@ static void ymf278b_pcm_update(int num, INT16 **outputs, int length)
 	vr = mix_level[YMF278B[num].pcm_r];
 	for (i = 0; i < length; i++)
 	{
-		outputs[0][i] = (*mixp++ * vl) >> 16;
-		outputs[1][i] = (*mixp++ * vr) >> 16;
+		INT32 val0 = (*mixp++ * vl) >> 16;
+		if (val0 > 32767) val0 = 32767;
+		else if (val0 < -32768) val0 = -32768;
+		outputs[0][i] = (INT16)val0;
+
+		INT32 val1 = (*mixp++ * vr) >> 16;
+		if (val1 > 32767) val1 = 32767;
+		else if (val1 < -32768) val1 = -32768;
+		outputs[1][i] = (INT16)val1;
 	}
 }
 

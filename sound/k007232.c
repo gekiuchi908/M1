@@ -217,9 +217,20 @@ static void KDAC_A_make_fncode( void ){
 static void KDAC_A_update(int chip, INT16 **buffer, int buffer_len)
 {
   int i;
+  INT32 mix_stack[2][2048];
+  INT32 *mix[2];
 
-  memset(buffer[0],0,buffer_len * sizeof(INT16));
-  memset(buffer[1],0,buffer_len * sizeof(INT16));
+  mix[0] = mix_stack[0];
+  mix[1] = mix_stack[1];
+
+  if (buffer_len > 2048)
+  {
+    mix[0] = (INT32 *)malloc(buffer_len * sizeof(INT32));
+    mix[1] = (INT32 *)malloc(buffer_len * sizeof(INT32));
+  }
+
+  memset(mix[0], 0, buffer_len * sizeof(INT32));
+  memset(mix[1], 0, buffer_len * sizeof(INT32));
 
   for( i = 0; i < KDAC_A_PCM_MAX; i++ )
     {
@@ -279,11 +290,30 @@ static void KDAC_A_update(int chip, INT16 **buffer, int buffer_len)
 
 	      out = (kpcm[chip].pcmbuf[i][addr] & 0x7f) - 0x40;
 
-	      buffer[0][j] += out * volA;
-	      buffer[1][j] += out * volB;
+	      mix[0][j] += out * volA;
+	      mix[1][j] += out * volB;
 	    }
 	}
     }
+
+  for (i = 0; i < buffer_len; i++)
+  {
+    INT32 val0 = mix[0][i];
+    if (val0 > 32767) val0 = 32767;
+    else if (val0 < -32768) val0 = -32768;
+    buffer[0][i] = val0;
+
+    INT32 val1 = mix[1][i];
+    if (val1 > 32767) val1 = 32767;
+    else if (val1 < -32768) val1 = -32768;
+    buffer[1][i] = val1;
+  }
+
+  if (buffer_len > 2048)
+  {
+    free(mix[0]);
+    free(mix[1]);
+  }
 }
 
 

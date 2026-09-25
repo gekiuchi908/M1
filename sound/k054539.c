@@ -141,7 +141,8 @@ static void K054539_update(int chip, INT16 **buffer, int length)
 
 	unsigned char *base1, *base2;
 	struct K054539_channel *chan;
-	short *bufl, *bufr, *revb;
+	short *revb;
+	INT32 *bufl, *bufr;
 	int cur_pos, cur_pfrac, cur_val, cur_pval;
 	int delta, rdelta, fdelta, pdelta;
 	int vol, bval, pan, i;
@@ -160,6 +161,21 @@ static void K054539_update(int chip, INT16 **buffer, int length)
 	rom_mask = K054539_chips.chip[chip].rom_mask;
 
 	if(!(K054539_chips.chip[chip].regs[0x22f] & 1)) return;
+
+	/* 32-bit mixing buffer to prevent 16-bit integer overflow */
+	INT32 mixl_stack[2048];
+	INT32 mixr_stack[2048];
+	INT32 *mixl = mixl_stack;
+	INT32 *mixr = mixr_stack;
+
+	if (length > 2048)
+	{
+		mixl = (INT32 *)malloc(length * sizeof(INT32));
+		mixr = (INT32 *)malloc(length * sizeof(INT32));
+	}
+
+	memset(mixl, 0, length * sizeof(INT32));
+	memset(mixr, 0, length * sizeof(INT32));
 
 	K054539_chips.chip[chip].reverb_pos = (reverb_pos + length) & 0x3fff;
 
@@ -212,8 +228,8 @@ static void K054539_update(int chip, INT16 **buffer, int length)
 
 			cur_pos = (base1[0x0c] | (base1[0x0d] << 8) | (base1[0x0e] << 16)) & rom_mask;
 
-			bufl = buffer[0];
-			bufr = buffer[1];
+			bufl = mixl;
+			bufr = mixr;
 //*
 
 			if(base2[0] & 0x20) {
@@ -238,8 +254,8 @@ static void K054539_update(int chip, INT16 **buffer, int length)
 
 #define UPDATE_CHANNELS																	\
 			do {																		\
-				*bufl++ += (INT16)(cur_val*lvol);										\
-				*bufr++ += (INT16)(cur_val*rvol);										\
+				*bufl++ += (INT32)(cur_val*lvol);										\
+				*bufr++ += (INT32)(cur_val*rvol);										\
 				*revb++ += (INT16)(cur_val*rbvol);										\
 			} while(0)
 
@@ -376,9 +392,28 @@ static void K054539_update(int chip, INT16 **buffer, int length)
 	{
 		for(i=0; i<length; i++) {
 			short val = rbase[(i+reverb_pos) & 0x3fff];
-			buffer[0][i] += val;
-			buffer[1][i] += val;
+			mixl[i] += val;
+			mixr[i] += val;
 		}
+	}
+
+	for (i = 0; i < length; i++)
+	{
+		INT32 val = mixl[i];
+		if (val > 32767) val = 32767;
+		else if (val < -32768) val = -32768;
+		buffer[0][i] = val;
+
+		val = mixr[i];
+		if (val > 32767) val = 32767;
+		else if (val < -32768) val = -32768;
+		buffer[1][i] = val;
+	}
+
+	if (length > 2048)
+	{
+		free(mixl);
+		free(mixr);
 	}
 
 	if(rbuffer+length > rev_top) {

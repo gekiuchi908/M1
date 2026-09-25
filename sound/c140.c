@@ -69,8 +69,8 @@ static int stream;
 static int banking_type;
 
 /* internal buffers */
-static INT16 *mixer_buffer_left;
-static INT16 *mixer_buffer_right;
+static INT32 *mixer_buffer_left;
+static INT32 *mixer_buffer_right;
 
 static int baserate;
 static void *pRom;
@@ -254,13 +254,13 @@ static void update_stereo(int ch, INT16 **buffer, int length)
 	INT32	lastdt,prevdt,dltdt;
 	float	pbase=(float)baserate*2.0 / (float)sample_rate;
 
-	INT16	*lmix, *rmix;
+	INT32	*lmix, *rmix;
 
 	if(length>sample_rate) length=sample_rate;
 
 	/* zap the contents of the mixer buffer */
-	memset(mixer_buffer_left, 0, length * sizeof(INT16));
-	memset(mixer_buffer_right, 0, length * sizeof(INT16));
+	memset(mixer_buffer_left, 0, length * sizeof(INT32));
+	memset(mixer_buffer_right, 0, length * sizeof(INT32));
 
 	/* get the number of voices to update */
 	voicecnt = (banking_type == C140_TYPE_ASIC219) ? 16 : 24;
@@ -470,7 +470,7 @@ int C140_sh_start( const struct MachineSound *msound )
 	}
 
 	/* allocate a pair of buffers to mix into - 1 second's worth should be more than enough */
-	mixer_buffer_left = malloc(2 * sizeof(INT16)*sample_rate );
+	mixer_buffer_left = malloc(2 * sizeof(INT32)*sample_rate );
 	if( mixer_buffer_left )
 	{
 		mixer_buffer_right = mixer_buffer_left + sample_rate;

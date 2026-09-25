@@ -291,8 +291,13 @@ void StreamSys_Run(signed short *out, long samples)
 			}
 		}
 
-		*out++ = accL;
-		*out++ = accR;
+		if (accL > 32767) accL = 32767;
+		else if (accL < -32768) accL = -32768;
+		*out++ = (signed short)accL;
+
+		if (accR > 32767) accR = 32767;
+		else if (accR < -32768) accR = -32768;
+		*out++ = (signed short)accR;
 	}
 
 	// phase 3: flush the streams back to nothing
