@@ -1,4 +1,5 @@
 #include "track_list.h"
+#include <algorithm>
 #include <QFile>
 #include <QFileInfo>
 #include <QTextStream>
@@ -174,13 +175,40 @@ TrackListData TrackListParser::load(const QString &romName, int minCmd, int maxC
         }
     }
 
-    // .lst が見つからない場合は minCmd 〜 maxCmd から曲番号リストを生成
+    // .lst が見つからない場合は曲番号リストを自動生成
+    // (maxCmd - minCmd が過大な場合に UI がフリーズするのを防ぐため上限を設ける)
+    constexpr int MAX_AUTOGEN_TRACKS = 512;
+
     if (minCmd >= 0 && maxCmd >= minCmd) {
-        for (int cmd = minCmd; cmd <= maxCmd; ++cmd) {
-            TrackItem item;
-            item.songNum = cmd;
-            item.title = QString("Track #%1").arg(cmd);
-            data.items.push_back(item);
+        long long totalRange = static_cast<long long>(maxCmd) - minCmd + 1;
+
+        if (totalRange <= MAX_AUTOGEN_TRACKS) {
+            // 通常の範囲内なら minCmd 〜 maxCmd を全件生成
+            for (int cmd = minCmd; cmd <= maxCmd; ++cmd) {
+                TrackItem item;
+                item.songNum = cmd;
+                item.title = QString("Track #%1").arg(cmd);
+                data.items.push_back(item);
+            }
+        } else {
+            // 範囲が過大な場合: defaultCmd 付近から安全な件数だけ生成
+            int startCmd = minCmd;
+            if (defaultCmd >= minCmd && defaultCmd <= maxCmd) {
+                // 24bit/16bit コマンドのベースアドレス (下位 8bit クリア) を試みる
+                int baseCmd = defaultCmd & ~0xFF;
+                if (baseCmd >= minCmd && baseCmd <= defaultCmd) {
+                    startCmd = baseCmd;
+                } else {
+                    startCmd = std::max(minCmd, defaultCmd - 32);
+                }
+            }
+            int endCmd = static_cast<int>(std::min(static_cast<long long>(maxCmd), static_cast<long long>(startCmd) + MAX_AUTOGEN_TRACKS - 1));
+            for (int cmd = startCmd; cmd <= endCmd; ++cmd) {
+                TrackItem item;
+                item.songNum = cmd;
+                item.title = QString("Track #%1").arg(cmd);
+                data.items.push_back(item);
+            }
         }
     }
 
