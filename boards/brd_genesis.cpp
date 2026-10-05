@@ -3,6 +3,7 @@
 // sonic 1 : music runs in subroutine @ 71b4c, commands at ffff0a/b/c, z80 program decompress/download @ 134a
 
 #include "m1snd.h"
+#include "cpu/z80.h"
 
 static unsigned char z80_ram[0x2000];
 
@@ -464,6 +465,71 @@ static WRITE_HANDLER( z80_write_bankswitch )
 //	printf("z80: change bank to %x\n", z80_bank);
 }
 
+static UINT32 md_calculate_bank(UINT8 low, UINT8 high)
+{
+	UINT32 bankpartial = 0;
+	int a = ((high << 1) | (high >> 7)) & 0xff;
+	int writes[9];
+	writes[0] = a & 1;
+	a = low;
+	for (int i = 0; i < 8; i++) {
+		writes[1 + i] = a & 1;
+		a = ((a >> 1) | (a << 7)) & 0xff;
+	}
+	for (int i = 0; i < 9; i++) {
+		bankpartial |= (writes[i] & 1) << 23;
+		if (i < 8) bankpartial >>= 1;
+	}
+	return bankpartial;
+}
+
+static void genesis_silence_all(void)
+{
+	// Hardware sound chip silencing (universal for all Genesis games)
+	// 1. Disable YM2612 DAC and center DAC output
+	YM2612_control_port_0_A_w(0, 0x2b);
+	YM2612_data_port_0_A_w(0, 0x00);
+	YM2612_control_port_0_A_w(0, 0x2a);
+	YM2612_data_port_0_A_w(0, 0x80);
+
+	// 2. YM2612 Key Off for all 6 channels
+	for (int ch = 0; ch < 6; ch++)
+	{
+		int op_ch = (ch < 3) ? ch : (ch + 1);
+		YM2612_control_port_0_A_w(0, 0x28);
+		YM2612_data_port_0_A_w(0, op_ch & 0x07);
+	}
+
+	// 3. YM2612 Total Level = 0x7f (maximum attenuation)
+	for (int r = 0x40; r <= 0x4f; r++)
+	{
+		YM2612_control_port_0_A_w(0, r);
+		YM2612_data_port_0_A_w(0, 0x7f);
+		YM2612_control_port_0_B_w(0, r);
+		YM2612_data_port_0_B_w(0, 0x7f);
+	}
+
+	// 4. PSG silence (all 4 channels attenuation = 0x0f)
+	SN76496_0_w(0, 0x9f);
+	SN76496_0_w(0, 0xbf);
+	SN76496_0_w(0, 0xdf);
+	SN76496_0_w(0, 0xff);
+
+	// SMPS Z80 driver specific cleanup (e.g. OutRun 2019)
+	if (m1snd_get_custom_tag_value("banktable") != 0xffffffff)
+	{
+		z80_ram[0x1c4f] = 0;
+		memset(&z80_ram[0x1c09], 0, 0x396);
+		z80_set_reg(Z80_SP, 0x1ffd);
+		z80_set_reg(Z80_PC, 0x0073);
+	}
+}
+
+static void Gen_StopCmd(int cmda)
+{
+	genesis_silence_all();
+}
+
 static MEMORY_READ_START( snd_readmem )
 	{ 0x0000, 0x1fff, z80_read_shared },
 	{ 0x2000, 0x3fff, z80_read_shared },
@@ -800,6 +866,38 @@ static void Gen_SendCmd(int cmda, int cmdb)
 //			printf("CMD %x to generic @ %x\n", cmda, m1snd_get_custom_tag_value("cmdadr"));
 			timer_spin_cpu(0);
 
+			if (m1snd_get_custom_tag_value("banktable") != 0xffffffff)
+			{
+				UINT32 btbl = m1snd_get_custom_tag_value("banktable");
+				UINT32 base_cmd = m1snd_get_custom_tag_value("bankmincmd");
+				if (base_cmd == 0xffffffff) base_cmd = 0x81;
+				int idx = (cmda & 0xff) - (int)base_cmd;
+				UINT32 max_cmd = m1snd_get_custom_tag_value("bankmaxcmd");
+				if (max_cmd == 0xffffffff) max_cmd = base_cmd + 13;
+				if (idx >= 0 && (cmda & 0xff) <= (int)max_cmd)
+				{
+					UINT8 low = prgrom[btbl + idx * 2];
+					UINT8 high = prgrom[btbl + idx * 2 + 1];
+					UINT32 badr = m1snd_get_custom_tag_value("bankadr");
+					if (badr != 0xffffffff)
+					{
+						z80_ram[badr] = low;
+						z80_ram[badr + 1] = high;
+					}
+					UINT32 new_bank = md_calculate_bank(low, high);
+					if (new_bank != z80_bank)
+					{
+						genesis_silence_all();
+						z80_bank = new_bank;
+					}
+					UINT32 prioadr = m1snd_get_custom_tag_value("prioadr");
+					if (prioadr != 0xffffffff)
+						z80_ram[prioadr] = 0;
+					else
+						z80_ram[0x1c18] = 0;
+				}
+			}
+
 			if (m1snd_get_custom_tag_value("cmdadr") != 0xffffffff)
 			{
 				z80_ram[m1snd_get_custom_tag_value("cmdadr")] = cmda&0xff;
@@ -930,6 +1028,7 @@ M1_BOARD_START( genesis )
 	MDRV_HWDESC("68000, Z80, YM2612, SN76496")
 	MDRV_INIT( Gen_Init )
 	MDRV_SEND( Gen_SendCmd )
+	MDRV_STOP( Gen_StopCmd )
 	MDRV_RUN( Gen_Frame )
 	MDRV_DELAYS(1500, 350)
 

@@ -8034,7 +8034,7 @@
 		<description>OutRun 2019</description>
 		<year>1993</year>
 		<manufacturer>Sims</manufacturer>
-		<m1data default="129" stop="0" min="1" max="255" subtype="1" init="0x1e58" cmdadr="0x1c0a" trigadr="0x1c00" trigval="0x07"/>
+		<m1data default="129" stop="225" min="1" max="255" subtype="1" init="0x1e58" cmdadr="0x1c0a" banktable="0x726" bankadr="0x1c00" bankmincmd="129" bankmaxcmd="142"/>
 		<region type="cpu1" size="4194304">
 			<rom name="g_or20.bin" size="1048576" crc="e32e17e2" sha1="d4a9f1992d69d849f7d4d770a1f4f665a5352c78" offset="0"/>
 		</region>
