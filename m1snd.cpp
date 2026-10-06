@@ -210,8 +210,14 @@ DLLEXPORT void m1snd_do_frame(unsigned long dwSamples, signed short *out)
 		if (calc < 1.0) calc = 1.0;
 		for (i = 0; i < dwSamples*2; i += 2)
 		{
-			out[i] *= (short)calc;
-			out[i+1] *= (short)calc;
+			long valL = (long)((float)out[i] * calc);
+			long valR = (long)((float)out[i+1] * calc);
+			if (valL > 32767) valL = 32767;
+			else if (valL < -32768) valL = -32768;
+			if (valR > 32767) valR = 32767;
+			else if (valR < -32768) valR = -32768;
+			out[i] = (short)valL;
+			out[i+1] = (short)valR;
 		}
 
 		cur_norm = (int)(calc*100.0);

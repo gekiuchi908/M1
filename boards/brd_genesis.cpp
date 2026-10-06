@@ -4,6 +4,7 @@
 
 #include "m1snd.h"
 #include "cpu/z80.h"
+#include "cpu/m68k.h"
 
 static unsigned char z80_ram[0x2000];
 
@@ -58,7 +59,7 @@ static struct SN76496interface sn76489_intf =
 {
 	1,								/* One chip */
 	{ MASTER_CLOCK/15 },			/* Clock: 3.58 MHz */
-	{ 10 }							/* Volume */
+	{ 40 }							/* Volume */
 };
 
 static unsigned int gen_read_memory_8(unsigned int address)
@@ -76,6 +77,10 @@ static unsigned int gen_read_memory_8(unsigned int address)
 
 	if ((address >= 0xa00000) && (address <= 0xa03fff))
 	{
+		if (Machine->refcon == 7 && (address & 0x1fff) == 0x2a)
+		{
+			return 0;
+		}
 		return z80_ram[address&0x1fff];
 	}
 
@@ -128,6 +133,11 @@ static unsigned int gen_read_memory_16(unsigned int address)
 	{
 		address &= 0x1fff;
 		return mem_readword_swap((unsigned short *)(z80_ram+address));
+	}
+
+	if (address == 0xa11100)
+	{
+		return (busreq ^ 1) ? 0x0100 : 0x0000;
 	}
 
 	if (address == 0xc00004)
@@ -210,6 +220,21 @@ static void gen_write_memory_8(unsigned int address, unsigned int data)
 		return;
 	}
 
+	if (address == 0xa11100)
+	{
+		if (data & 1)
+		{
+			busreq = 1;
+			timer_spin_cpu(1);
+		}
+		else
+		{
+			busreq = 0;
+			timer_unspin_cpu(1);
+		}
+		return;
+	}
+
 	if (address >= 0xa11200 && address <= 0xa11201)
 	{
 //		printf("Z80 reset W8: %x\n", data);
@@ -277,13 +302,15 @@ static void gen_write_memory_16(unsigned int address, unsigned int data)
 	if (address == 0xa11100)
 	{
 //		printf("68k: busreq %x (PC=%x)\n", data, m68k_get_reg(NULL, M68K_REG_PC));
-		if (data)
+		if (data & 0x100)
 		{
 			busreq = 1;
+			timer_spin_cpu(1);
 		}
 		else
 		{
 			busreq = 0;
+			timer_unspin_cpu(1);
 		}
 		return;
 	}
@@ -527,6 +554,11 @@ static void genesis_silence_all(void)
 
 static void Gen_StopCmd(int cmda)
 {
+	if (Machine->refcon == 7)
+	{
+		Gen_SendCmd(games[curgame].stopcmd, 0);
+		return;
+	}
 	genesis_silence_all();
 }
 
@@ -627,7 +659,48 @@ static void setup_gems(UINT32 gemsinit, UINT32 initcall, UINT32 startsong, UINT3
 	write_rom_16(0x61a, 0x5555);	// #$5555, (a1)	(causes halt of 68k)
 }
 
+static int sc_vint_pending = 0;
+static int sc_hint_pending = 0;
+
+static void update_68k_irq(void)
+{
+	if (sc_vint_pending)
+	{
+		m68k_set_irq(M68K_IRQ_6);
+	}
+	else if (sc_hint_pending)
+	{
+		m68k_set_irq(M68K_IRQ_4);
+	}
+	else
+	{
+		m68k_set_irq(M68K_IRQ_NONE);
+	}
+}
+
+static int sc_irq_callback(int int_level)
+{
+	if (int_level == 6)
+	{
+		sc_vint_pending = 0;
+	}
+	else if (int_level == 4)
+	{
+		sc_hint_pending = 0;
+	}
+	update_68k_irq();
+	return M68K_INT_ACK_AUTOVECTOR;
+}
+
 static void vbl_timer(int refcon);
+static void sc_hint_timer(int refcon);
+
+static void sc_hint_timer(int refcon)
+{
+	sc_hint_pending = 1;
+	update_68k_irq();
+	timer_set(1.0/240.0, 0, sc_hint_timer);
+}
 
 static void vbl_out_timer(int refcon)
 {
@@ -646,6 +719,11 @@ static void vbl_timer(int refcon)
 	}
 
 	cpu_set_irq_line(1, 0, ASSERT_LINE);
+	if (Machine->refcon == 7)
+	{
+		sc_vint_pending = 1;
+		update_68k_irq();
+	}
 	timer_set((1.0/60.0)/262.0, 0, vbl_out_timer);
 }
 
@@ -803,7 +881,52 @@ static void Gen_Init(long srate)
 
 			timer_spin_cpu(1);
 		      	timer_set(1.0/60.0, 0, vbl_timer);
-			break;	
+			break;
+
+		case 7: // Arsys 68k (Star Cruiser)
+		{
+			write_rom_32(0, 0xfffe00);	// initial stack
+			write_rom_32(4, 0x080000);	// address to run
+
+			int p = 0x080000;
+			write_rom_16(p, 0x46fc); p += 2;
+			write_rom_16(p, 0x2700); p += 2; // move.w #$2700, sr
+			write_rom_16(p, 0x2e7c); p += 2;
+			write_rom_32(p, 0xfffe00); p += 4; // movea.l #$fffe00, a7
+			write_rom_16(p, 0x2c7c); p += 2;
+			write_rom_32(p, 0xff0000); p += 4; // movea.l #$ff0000, a6
+			write_rom_16(p, 0x426e); p += 2;
+			write_rom_16(p, 0x000c); p += 2; // clr.w $c(a6)
+			write_rom_16(p, 0x204e); p += 2; // movea.l a6, a0
+			write_rom_16(p, 0x303c); p += 2;
+			write_rom_16(p, 0x05bc); p += 2; // move.w #$5bc, d0
+			write_rom_16(p, 0x4258); p += 2; // clr_loop: clr.w (a0)+
+			write_rom_16(p, 0x51c8); p += 2;
+			write_rom_16(p, 0xfffc); p += 2; // dbra d0, clr_loop (-4)
+			write_rom_16(p, 0x3d7c); p += 2;
+			write_rom_16(p, 0x0005); p += 2;
+			write_rom_16(p, 0x0470); p += 2; // move.w #$5, $470(a6)
+			write_rom_16(p, 0x3d7c); p += 2;
+			write_rom_16(p, 0x0124); p += 2;
+			write_rom_16(p, 0x019a); p += 2; // move.w #$124, $19a(a6)
+			write_rom_16(p, 0x4eb9); p += 2;
+			write_rom_32(p, 0x009592); p += 4; // jsr $9592 (Z80 init)
+			write_rom_16(p, 0x4eb9); p += 2;
+			write_rom_32(p, 0x00a500); p += 4; // jsr $a500 (silence)
+			write_rom_16(p, 0x46fc); p += 2;
+			write_rom_16(p, 0x2000); p += 2; // move.w #$2000, sr
+			write_rom_16(p, 0x60fe); p += 2; // idle: bra.b idle (-2)
+
+			sc_vint_pending = 0;
+			sc_hint_pending = 0;
+			m68k_set_int_ack_callback(sc_irq_callback);
+
+			memset(workram, 0, 64*1024);
+			timer_unspin_cpu(0);
+			timer_set(1.0/60.0, 0, vbl_timer);
+			timer_set(1.0/240.0, 0, sc_hint_timer);
+			break;
+		}
 	}
 
 	if (m1snd_get_custom_tag_value("cmdsubd0") != 0xffffffff)
@@ -1012,7 +1135,50 @@ static void Gen_SendCmd(int cmda, int cmdb)
 			{
 			 	workram[m1snd_get_custom_tag_value("cmdadr")] = cmda & 0xff;
 			}
-			break;	
+			break;
+
+	  	case 7: // Arsys 68k (Star Cruiser)
+		{
+			int p = 0x080080;
+			write_rom_16(p, 0x46fc); p += 2;
+			write_rom_16(p, 0x2700); p += 2; // move.w #$2700, sr
+			write_rom_16(p, 0x2e7c); p += 2;
+			write_rom_32(p, 0xfffe00); p += 4; // movea.l #$fffe00, a7
+			write_rom_16(p, 0x2c7c); p += 2;
+			write_rom_32(p, 0xff0000); p += 4; // movea.l #$ff0000, a6
+
+			if (cmda == games[curgame].stopcmd)
+			{
+				write_rom_16(p, 0x4eb9); p += 2;
+				write_rom_32(p, 0x00a500); p += 4; // jsr $a500 (silence)
+			}
+			else
+			{
+				int song = cmda - 1; // 1-based: 1 = song 0, ..., 21 = song 20
+				if (song < 0) song = 0;
+				if (song > 20) song = 20;
+
+				write_rom_16(p, 0x4eb9); p += 2;
+				write_rom_32(p, 0x00a500); p += 4; // jsr $a500 (silence)
+				write_rom_16(p, 0x303c); p += 2;
+				write_rom_16(p, song & 0xffff); p += 2; // move.w #song, d0
+				write_rom_16(p, 0x4eb9); p += 2;
+				write_rom_32(p, 0x00a5e0); p += 4; // jsr $a5e0 (start song)
+			}
+
+			write_rom_16(p, 0x46fc); p += 2;
+			write_rom_16(p, 0x2000); p += 2; // move.w #$2000, sr
+			write_rom_16(p, 0x60fe); p += 2; // bra.b idle (-2)
+
+			sc_vint_pending = 0;
+			sc_hint_pending = 0;
+			m68k_set_int_ack_callback(sc_irq_callback);
+			update_68k_irq();
+
+			m68k_set_reg(M68K_REG_PC, 0x080080);
+			timer_unspin_cpu(0);
+			break;
+		}
 	}
 }
 

@@ -8453,6 +8453,15 @@
 			<rom name="g_scob.bin" size="2097152" crc="7bb9dd9b" sha1="ccc9542d964de5bdc1e9101620cae40dd98e7127" offset="0"/>
 		</region>
 	</game>	
+	<game name="g_SCruiser" board="Sega Genesis/MegaDrive">
+		<description>Star Cruiser</description>
+		<year>1990</year>
+		<manufacturer>MASAYA/Arsys Software</manufacturer>
+		<m1data default="1" stop="0" min="1" max="21" subtype="7"/>
+		<region type="cpu1" size="4194304">
+			<rom name="g_SCruiser.bin" size="524288" crc="2b75b52f" sha1="cb099ecde141beffdfed6bb7f1d3dc6340da81d1" offset="0"/>
+		</region>
+	</game>
 	<game name="g_sdnk" board="Sega Genesis/MegaDrive">
 		<description>Slam Dunk - Shikyou Gekitotsu!</description>
 		<year>1995</year>
