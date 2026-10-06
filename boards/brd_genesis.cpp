@@ -185,11 +185,12 @@ static unsigned int gen_read_memory_32(unsigned int address)
 	return 0;
 }
 
+static int z80_reset_line = ASSERT_LINE;
+
 static void gen_write_memory_8(unsigned int address, unsigned int data)
 {
 	if ((address >= 0xa00000) && (address <= 0xa03fff))
 	{
-//		printf("W8 %02x to Z80 @ %x\n", data, address&0x1fff);
 		z80_ram[address&0x1fff] = data;
 		return;
 	}
@@ -237,20 +238,16 @@ static void gen_write_memory_8(unsigned int address, unsigned int data)
 
 	if (address >= 0xa11200 && address <= 0xa11201)
 	{
-//		printf("Z80 reset W8: %x\n", data);
-		// z80 reset
+		int new_line = data ? CLEAR_LINE : ASSERT_LINE;
 
-		if (data)
+		if (new_line != z80_reset_line)
 		{
-//			printf("booting Z80\n");
-			timer_unspin_cpu(1);
-			cpu_set_reset_line(1, ASSERT_LINE);
-			cpu_set_reset_line(1, CLEAR_LINE);
-		}
-		else
-		{
-//			printf("Stopping Z80\n");
-			timer_spin_cpu(1);
+			z80_reset_line = new_line;
+			cpu_set_reset_line(1, z80_reset_line);
+			if (z80_reset_line == CLEAR_LINE)
+				timer_unspin_cpu(1);
+			else
+				timer_spin_cpu(1);
 		}
 		return;
 	}
@@ -301,7 +298,6 @@ static void gen_write_memory_16(unsigned int address, unsigned int data)
 
 	if (address == 0xa11100)
 	{
-//		printf("68k: busreq %x (PC=%x)\n", data, m68k_get_reg(NULL, M68K_REG_PC));
 		if (data & 0x100)
 		{
 			busreq = 1;
@@ -317,19 +313,16 @@ static void gen_write_memory_16(unsigned int address, unsigned int data)
 
 	if (address == 0xa11200)
 	{
-//		printf("Z80 reset W16: %x\n", data);
+		int new_line = (data & 0x100) ? CLEAR_LINE : ASSERT_LINE;
 
-		if (data)
+		if (new_line != z80_reset_line)
 		{
-//			printf("booting Z80\n");
-			timer_unspin_cpu(1);
-			cpu_set_reset_line(1, ASSERT_LINE);
-			cpu_set_reset_line(1, CLEAR_LINE);
-		}
-		else
-		{
-//			printf("Stopping Z80\n");
-			timer_spin_cpu(1);
+			z80_reset_line = new_line;
+			cpu_set_reset_line(1, z80_reset_line);
+			if (z80_reset_line == CLEAR_LINE)
+				timer_unspin_cpu(1);
+			else
+				timer_spin_cpu(1);
 		}
 		return;
 	}
@@ -413,7 +406,7 @@ static WRITE_HANDLER( z80_write_vdp )
 	}
 }
 
-static UINT32 z80_bank = 0, z80_bankpartial = 0, z80_bank_pos = 0;
+static UINT32 z80_bank = 0;
 
 static READ_HANDLER( z80_read_bank )
 {
@@ -475,21 +468,7 @@ static WRITE_HANDLER( z80_write_bank )
 
 static WRITE_HANDLER( z80_write_bankswitch )
 {
-	z80_bankpartial |= (data & 0x01) << 23;
-	z80_bank_pos++;
-
-	if (z80_bank_pos < 9)
-	{
-		z80_bankpartial >>= 1;
-	}
-	else
-	{
-		z80_bank_pos = 0;
-		z80_bank = z80_bankpartial;
-		z80_bankpartial = 0;
-	}
-
-//	printf("z80: change bank to %x\n", z80_bank);
+	z80_bank = ((z80_bank >> 1) | ((data & 0x01) << 23)) & 0xff8000;
 }
 
 static UINT32 md_calculate_bank(UINT8 low, UINT8 high)
@@ -554,7 +533,7 @@ static void genesis_silence_all(void)
 
 static void Gen_StopCmd(int cmda)
 {
-	if (Machine->refcon == 7)
+	if (Machine->refcon == 7 || Machine->refcon == 8)
 	{
 		Gen_SendCmd(games[curgame].stopcmd, 0);
 		return;
@@ -705,7 +684,10 @@ static void sc_hint_timer(int refcon)
 static void vbl_out_timer(int refcon)
 {
 	vdp_status &= ~8;
-	cpu_set_irq_line(1, 0, CLEAR_LINE);
+	if (Machine->refcon != 8)
+	{
+		cpu_set_irq_line(1, 0, CLEAR_LINE);
+	}
 	timer_set(1.0/60.0, 0, vbl_timer);
 }
 
@@ -718,7 +700,17 @@ static void vbl_timer(int refcon)
 		z80_ram[m1snd_get_custom_tag_value("ftrigadr")] = m1snd_get_custom_tag_value("ftrigval");
 	}
 
-	cpu_set_irq_line(1, 0, ASSERT_LINE);
+	if (Machine->refcon != 8)
+	{
+		cpu_set_irq_line(1, 0, ASSERT_LINE);
+	}
+	else
+	{
+		if (z80_ram[0x112] == 0)
+		{
+			z80_ram[0x113]++;
+		}
+	}
 	if (Machine->refcon == 7)
 	{
 		sc_vint_pending = 1;
@@ -765,6 +757,7 @@ static void Gen_Init(long srate)
 	UINT32 haltadr;
 		
 	vdp_status = 0;
+	z80_reset_line = ASSERT_LINE;
 
 	// stop the Z80 until we need it
 	timer_spin_cpu(1);
@@ -925,6 +918,51 @@ static void Gen_Init(long srate)
 			timer_unspin_cpu(0);
 			timer_set(1.0/60.0, 0, vbl_timer);
 			timer_set(1.0/240.0, 0, sc_hint_timer);
+			break;
+		}
+
+		case 8: // M2 Darius MD
+		{
+			write_rom_32(0, 0xfffe00);	// initial stack
+			write_rom_32(4, 0x080000);	// address to run
+
+			memset(workram, 0, 64*1024);
+			memcpy(workram, prgrom + 0x3faa4a, 0x1000);
+
+			// Mark sound driver as initialized in workram
+			workram[0x2cfa] = 0;
+			workram[0x2cfb] = 5;
+			workram[0x2cf6] = 0;
+			workram[0x2cf7] = 0x3c;
+			workram[0x2cf4] = 0;
+			workram[0x2cf5] = 0x3c;
+
+			// Copy Z80 sound driver to Z80 RAM
+			memset(z80_ram, 0, 0x2000);
+			memcpy(z80_ram, prgrom + 0x8bb32, 0x1700);
+
+			// Initialize default silence track at 0x1c00 (pointing to 0x66600 in ROM)
+			z80_ram[0x1c00] = 0x66;
+			z80_ram[0x1c01] = 0x06;
+			z80_ram[0x1c02] = 0x01;
+			z80_ram[0x1c03] = 0x00;
+
+			z80_bank = 0;
+
+			// 68K boot code (just idle)
+			int p = 0x080000;
+			write_rom_16(p, 0x46fc); p += 2;
+			write_rom_16(p, 0x2700); p += 2; // move.w #$2700, sr
+			write_rom_16(p, 0x2e7c); p += 2;
+			write_rom_32(p, 0xfffe00); p += 4; // movea.l #$fffe00, a7
+			write_rom_16(p, 0x46fc); p += 2;
+			write_rom_16(p, 0x2000); p += 2; // move.w #$2000, sr
+			write_rom_16(p, 0x60fe); p += 2; // idle: bra.b idle (-2)
+
+			timer_unspin_cpu(0);
+			timer_unspin_cpu(1);
+			z80_reset_line = CLEAR_LINE;
+			timer_set(1.0/60.0, 0, vbl_timer);
 			break;
 		}
 	}
@@ -1177,6 +1215,49 @@ static void Gen_SendCmd(int cmda, int cmdb)
 
 			m68k_set_reg(M68K_REG_PC, 0x080080);
 			timer_unspin_cpu(0);
+			break;
+		}
+
+		case 8: // M2 Darius MD
+		{
+			int p = 0x080080;
+			write_rom_16(p, 0x46fc); p += 2;
+			write_rom_16(p, 0x2700); p += 2; // move.w #$2700, sr
+			write_rom_16(p, 0x2e7c); p += 2;
+			write_rom_32(p, 0xfffe00); p += 4; // movea.l #$fffe00, a7
+
+			if (cmda == games[curgame].stopcmd)
+			{
+				write_rom_16(p, 0x4eb9); p += 2;
+				write_rom_32(p, 0x005c300); p += 4; // jsr $5c300 (stop sound)
+				genesis_silence_all();
+			}
+			else
+			{
+				int song = cmda - 1; // 1-based: 1 = song 0 ... 20 = song 19
+				if (song < 0) song = 0;
+				if (song > 19) song = 19;
+
+				write_rom_16(p, 0x4879); p += 2;
+				write_rom_32(p, 0x1f4); p += 4; // pea.l $1f4
+				write_rom_16(p, 0x4eb9); p += 2;
+				write_rom_32(p, 0x0050284); p += 4; // jsr $50284 (volume setup)
+				write_rom_16(p, 0x588f); p += 2; // addq.l #4, a7
+
+				write_rom_16(p, 0x4879); p += 2;
+				write_rom_32(p, song & 0xffff); p += 4; // pea.l song
+				write_rom_16(p, 0x4eb9); p += 2;
+				write_rom_32(p, 0x0001736); p += 4; // jsr $1736 (play BGM)
+				write_rom_16(p, 0x588f); p += 2; // addq.l #4, a7
+			}
+
+			write_rom_16(p, 0x46fc); p += 2;
+			write_rom_16(p, 0x2000); p += 2; // move.w #$2000, sr
+			write_rom_16(p, 0x60fe); p += 2; // bra.b idle (-2)
+
+			m68k_set_reg(M68K_REG_PC, 0x080080);
+			timer_unspin_cpu(0);
+			timer_unspin_cpu(1);
 			break;
 		}
 	}

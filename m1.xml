@@ -6734,6 +6734,15 @@
 			<rom name="g_cybo.bin" size="524288" crc="ab0d1269" sha1="6d0c72fa5e53d897390707eb4c6d3e86e6772215"/>
 		</region>
 	</game>
+	<game name="g_Darius" board="Sega Genesis/MegaDrive">
+		<description>Darius MD</description>
+		<year>2021</year>
+		<manufacturer>M2 Co./Taito</manufacturer>
+		<m1data default="10" stop="0" min="1" max="20" subtype="8"/>
+		<region type="cpu1" size="4194304">
+			<rom name="g_Darius.bin" size="4194304" crc="7fdc6236" sha1="29bf7476610e97ba5ffd7364248373ac48fa84ef" offset="0"/>
+		</region>
+	</game>
 	<game name="g_dahna" board="Sega Genesis/MegaDrive">
 		<description>Dahna - Megami Tanjou</description>
 		<year>1991</year>
