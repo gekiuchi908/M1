@@ -8463,7 +8463,7 @@
 		</region>
 	</game>	
 	<game name="g_SCruiser" board="Sega Genesis/MegaDrive">
-		<description>Star Cruiser</description>
+		<description>Star Cruiser MD</description>
 		<year>1990</year>
 		<manufacturer>MASAYA/Arsys Software</manufacturer>
 		<m1data default="1" stop="0" min="1" max="21" subtype="7"/>

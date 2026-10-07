@@ -14,6 +14,7 @@
 #include <QProgressBar>
 #include <QSortFilterProxyModel>
 #include <QSplitter>
+#include <QDateTime>
 
 class GameFilterProxyModel : public QSortFilterProxyModel {
     Q_OBJECT
@@ -73,6 +74,7 @@ private slots:
 private:
     void setupUi();
     void loadXml();
+    QString getXmlPath() const;
     void updateDetailPanel(const GameEntry &game);
     void updateStatusBarStats();
 
@@ -105,4 +107,5 @@ private:
     std::vector<std::string> m_romPaths;
     GameEntry m_selectedGame;
     bool m_isLoaded = false;
+    QDateTime m_xmlLastModified;
 };

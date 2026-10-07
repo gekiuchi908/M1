@@ -11,6 +11,8 @@
 #include <QDir>
 #include <QFont>
 #include <QDebug>
+#include <QCoreApplication>
+#include <unordered_map>
 
 // ==========================================
 // GameFilterProxyModel
@@ -339,42 +341,121 @@ void RomBrowserDialog::retranslateUi() {
     updateStatusBarStats();
 }
 
+QString RomBrowserDialog::getXmlPath() const {
+    // 1. アプリケーション実行ディレクトリ配下の m1.xml
+    QString appXml = QCoreApplication::applicationDirPath() + "/m1.xml";
+    if (QFile::exists(appXml)) {
+        return appXml;
+    }
+    // 2. カレントワーキングディレクトリ配下の m1.xml
+    if (QFile::exists("m1.xml")) {
+        return "m1.xml";
+    }
+    return "";
+}
+
 void RomBrowserDialog::ensureLoaded() {
-    if (m_isLoaded) return;
+    QString xmlPath = getXmlPath();
+    QDateTime currentXmlMtime;
+    if (!xmlPath.isEmpty()) {
+        currentXmlMtime = QFileInfo(xmlPath).lastModified();
+    }
+
+    // すでにロード済みで、かつ m1.xml の変更もない場合はスキップ
+    if (m_isLoaded && (!currentXmlMtime.isValid() || currentXmlMtime == m_xmlLastModified)) {
+        return;
+    }
 
     QString cacheFile = GameCache::defaultCachePath();
-    std::vector<GameEntry> games;
+    std::vector<GameEntry> cachedGames;
+    bool hasCache = GameCache::exists(cacheFile) && GameCache::load(cacheFile, cachedGames) && !cachedGames.empty();
 
-    if (GameCache::exists(cacheFile) && GameCache::load(cacheFile, games) && !games.empty()) {
-        m_tableModel->setGames(games);
-        m_tableView->sortByColumn(GameTableModel::ColDescription, Qt::AscendingOrder);
-        if (m_proxyModel->rowCount() > 0) {
-            m_tableView->selectRow(0);
+    std::vector<GameEntry> xmlGames;
+    std::string parseErr;
+    bool xmlOk = !xmlPath.isEmpty() && M1XmlParser::parse(xmlPath.toStdString(), xmlGames, parseErr);
+
+    if (xmlOk && !xmlGames.empty()) {
+        m_xmlLastModified = currentXmlMtime;
+
+        if (hasCache) {
+            // キャッシュから検証ステータス・パスを名前キーで引き継ぎ
+            std::unordered_map<std::string, const GameEntry*> cacheMap;
+            for (const auto &cg : cachedGames) {
+                cacheMap[cg.name] = &cg;
+            }
+
+            bool hasNewOrUnchecked = false;
+            for (auto &xg : xmlGames) {
+                auto it = cacheMap.find(xg.name);
+                if (it != cacheMap.end()) {
+                    const GameEntry *cg = it->second;
+                    // ROM 定義数が同一であれば過去の検証結果を引き継ぐ
+                    if (xg.roms.size() == cg->roms.size()) {
+                        xg.status = cg->status;
+                        xg.zipPath = cg->zipPath;
+                        xg.roms = cg->roms;
+                    }
+                }
+                if (xg.status == GameStatus::Unchecked) {
+                    // 新規追加または未検証のゲームのみを即座に同期検証
+                    RomVerifier::verifyGame(xg, m_romPaths);
+                    hasNewOrUnchecked = true;
+                }
+            }
+
+            m_tableModel->setGames(xmlGames);
+
+            // 新規追加や変更、またはキャッシュ件数と差分がある場合は即座にキャッシュ保存
+            if (hasNewOrUnchecked || xmlGames.size() != cachedGames.size()) {
+                GameCache::save(cacheFile, xmlGames);
+            }
+        } else {
+            // キャッシュが存在しない場合は m1.xml をパースして自動スキャンを開始
+            m_tableModel->setGames(xmlGames);
+            m_tableView->sortByColumn(GameTableModel::ColDescription, Qt::AscendingOrder);
+            if (m_proxyModel->rowCount() > 0) {
+                m_tableView->selectRow(0);
+            }
+            updateStatusBarStats();
+            m_isLoaded = true;
+            onRescanClicked();
+            return;
         }
-        updateStatusBarStats();
-        m_isLoaded = true;
+    } else if (hasCache) {
+        // XML が見つからない・パース失敗時はキャッシュにフォールバック
+        m_tableModel->setGames(cachedGames);
     } else {
-        // キャッシュが存在しない場合は m1.xml をパースして自動スキャンを開始
-        loadXml();
-        m_isLoaded = true;
-        onRescanClicked();
+        if (!xmlPath.isEmpty() && !parseErr.empty()) {
+            QMessageBox::critical(this, I18n::msgXmlParseErrorTitle(), I18n::msgXmlParseErrorText(QString::fromStdString(parseErr)));
+        } else {
+            QMessageBox::critical(this, I18n::msgXmlNotFoundTitle(), I18n::msgXmlNotFoundText());
+        }
+        return;
     }
+
+    m_tableView->sortByColumn(GameTableModel::ColDescription, Qt::AscendingOrder);
+    if (m_proxyModel->rowCount() > 0) {
+        m_tableView->selectRow(0);
+    }
+    updateStatusBarStats();
+    m_isLoaded = true;
 }
 
 void RomBrowserDialog::loadXml() {
-    std::string xmlPath = "m1.xml";
-    if (!QFile::exists(QString::fromStdString(xmlPath))) {
+    QString xmlPath = getXmlPath();
+    if (xmlPath.isEmpty()) {
         QMessageBox::critical(this, I18n::msgXmlNotFoundTitle(), I18n::msgXmlNotFoundText());
         return;
     }
 
     std::vector<GameEntry> games;
     std::string err;
-    if (!M1XmlParser::parse(xmlPath, games, err)) {
+    if (!M1XmlParser::parse(xmlPath.toStdString(), games, err)) {
         QMessageBox::critical(this, I18n::msgXmlParseErrorTitle(), I18n::msgXmlParseErrorText(QString::fromStdString(err)));
         return;
     }
 
+    m_xmlLastModified = QFileInfo(xmlPath).lastModified();
     m_tableModel->setGames(games);
     m_tableView->sortByColumn(GameTableModel::ColDescription, Qt::AscendingOrder);
     if (m_proxyModel->rowCount() > 0) {
@@ -420,6 +501,17 @@ void RomBrowserDialog::onOkPlayClicked() {
 
 void RomBrowserDialog::onRescanClicked() {
     if (m_verifier->isRunning()) return;
+
+    // 再スキャン時は常に最新の m1.xml を再読み込みして全リストを同期
+    QString xmlPath = getXmlPath();
+    if (!xmlPath.isEmpty()) {
+        std::vector<GameEntry> xmlGames;
+        std::string err;
+        if (M1XmlParser::parse(xmlPath.toStdString(), xmlGames, err)) {
+            m_xmlLastModified = QFileInfo(xmlPath).lastModified();
+            m_tableModel->setGames(xmlGames);
+        }
+    }
 
     m_rescanBtn->setEnabled(false);
     m_progressBar->setValue(0);
