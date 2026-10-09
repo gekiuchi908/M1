@@ -16843,7 +16843,7 @@
 		<region type="samp1" size="2097152">
 		</region>
 		<region type="user2" size="2097664">
-			<rom name="rdft.nv" size="2097664" crc="00000000" sha1="0000000000000000000000000000000000000000" offset="0"/>
+			<rom name="rdft.nv" size="2097664" crc="00000000" offset="0"/>
 		</region>
 	</game>
 	<game name="rdkng_l4" board="Williams Y-Unit CVSD">
@@ -16964,7 +16964,7 @@
 		<region type="samp1" size="2097152">
 		</region>
 		<region type="user2" size="2097664">
-			<rom name="rfjet.nv" size="2097664" crc="00000000" sha1="0000000000000000000000000000000000000000" offset="0"/>
+			<rom name="rfjet.nv" size="2097664" crc="00000000" offset="0"/>
 		</region>
 	</game>
 	<game name="ridgera2" board="Namco System 22">
@@ -22410,7 +22410,7 @@
 		<region type="samp1" size="2097152">
 		</region>
 		<region type="user2" size="2097664">
-			<rom name="viprp1.nv" size="2097664" crc="00000000" sha1="0000000000000000000000000000000000000000" offset="0"/>
+			<rom name="viprp1.nv" size="2097664" crc="00000000" offset="0"/>
 		</region>
 	</game>
 	<game name="viprp1j" board="Seibu SPI" romof="seibunvs">
@@ -22429,7 +22429,7 @@
 		<region type="samp1" size="2097152">
 		</region>
 		<region type="user2" size="2097664">
-			<rom name="viprp1.nv" size="2097664" crc="00000000" sha1="0000000000000000000000000000000000000000" offset="0"/>
+			<rom name="viprp1.nv" size="2097664" crc="00000000" offset="0"/>
 		</region>
 	</game>
 	<game name="viprsega" board="Tattoo Assassins">
