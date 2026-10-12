@@ -159,6 +159,9 @@ void timer_run_frame(void)
 	cur_frame_time = 0.0;
 	cur_frame_left = 1.0/timer_frame_rate;
 
+	extern void YM2612_new_frame(void);
+	YM2612_new_frame();
+
 	for (i = 0; i < TIMER_MAX_CPUS; i++)
 	{
 		if (cpus[i].inuse)
@@ -423,6 +426,12 @@ double timer_get_cur_dsp_time(void)
 	return(rtime);
 }
 
+// get absolute time in seconds from start of current frame
+double timer_get_cur_frame_time(void)
+{
+	return cur_frame_time + timer_get_cur_cpu_time();
+}
+
 // returns time used (not 100% accurate)
 double timer_timeelapsed(TimerT *tptr)
 {
@@ -644,4 +653,25 @@ int timer_get_cpu_type(int cpunum)
 double timer_get_cpu_clock(int cpunum)
 {
 	return cpus[cpunum].clock;
+}
+
+void timer_run_cpu_slice(int cpu, int cycles)
+{
+	int saved_cpu = cur_cpu;
+	if (saved_cpu != -1)
+	{
+		timer_save_cpu(saved_cpu);
+	}
+	cur_cpu = cpu;
+	timer_restore_cpu(cpu);
+	if (!cpus[cpu].spin)
+	{
+		cpus[cpu].emulroutine(cycles);
+	}
+	timer_save_cpu(cpu);
+	cur_cpu = saved_cpu;
+	if (saved_cpu != -1)
+	{
+		timer_restore_cpu(saved_cpu);
+	}
 }

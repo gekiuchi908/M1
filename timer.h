@@ -52,6 +52,8 @@ void timer_run_frame(void);
 void timer_yield(void);
 double timer_get_cur_cpu_time(void);
 double timer_get_cur_dsp_time(void);
+double timer_get_cur_frame_time(void);
+int timer_get_cur_cpu(void);
 double timer_timeelapsed(TimerT *tptr);
 void timer_enable(TimerT *tptr, int enable);
 void timer_setturbo(int factor);
@@ -66,5 +68,6 @@ void timer_spin_cpu(int cpu);
 void timer_unspin_cpu(int cpu);
 void *timer_alloc(void (*callback)(int));
 void timer_adjust(void *which, double duration, int param, double period);
+void timer_run_cpu_slice(int cpu, int cycles);
 
 #endif

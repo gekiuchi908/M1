@@ -77,10 +77,6 @@ static unsigned int gen_read_memory_8(unsigned int address)
 
 	if ((address >= 0xa00000) && (address <= 0xa03fff))
 	{
-		if (Machine->refcon == 7 && (address & 0x1fff) == 0x2a)
-		{
-			return 0;
-		}
 		return z80_ram[address&0x1fff];
 	}
 
@@ -187,6 +183,9 @@ static unsigned int gen_read_memory_32(unsigned int address)
 
 static int z80_reset_line = ASSERT_LINE;
 
+extern "C" int sc_frame_count;
+int sc_frame_count = 0;
+
 static void gen_write_memory_8(unsigned int address, unsigned int data)
 {
 	if ((address >= 0xa00000) && (address <= 0xa03fff))
@@ -226,6 +225,15 @@ static void gen_write_memory_8(unsigned int address, unsigned int data)
 		if (data & 1)
 		{
 			busreq = 1;
+			if (Machine->refcon == 7 && z80_ram[0x2a] != 0)
+			{
+				int guard = 0;
+				while (z80_ram[0x2a] != 0 && guard < 50)
+				{
+					timer_run_cpu_slice(1, 10);
+					guard++;
+				}
+			}
 			timer_spin_cpu(1);
 		}
 		else
@@ -301,6 +309,15 @@ static void gen_write_memory_16(unsigned int address, unsigned int data)
 		if (data & 0x100)
 		{
 			busreq = 1;
+			if (Machine->refcon == 7 && z80_ram[0x2a] != 0)
+			{
+				int guard = 0;
+				while (z80_ram[0x2a] != 0 && guard < 50)
+				{
+					timer_run_cpu_slice(1, 10);
+					guard++;
+				}
+			}
 			timer_spin_cpu(1);
 		}
 		else
@@ -419,25 +436,16 @@ static READ_HANDLER( z80_read_bank )
 	}
 	else if (addr <= 0x9FFFFF) 
 	{
-		//printf("Z80 read in 32X space: %08X\n", addr);
 		addr -= 0x880000;
 		return prgrom[addr];
 	}
-
 	else if (addr <= 0xA1513F) 
 	{
-		//printf("Program wrote in 32X space: %08X\n", addr);
 		return 0;
 	}
-
 	else if (addr >= 0xe00000)	// work RAM
 	{
-		//printf("Z80 reading workram @ %x\n", addr);
 		return workram[addr&0xffff];
-	}						     
-	else
-	{
-//		printf("Z80 reading unknown banked data @ %x\n", addr);
 	}
 
 	return 0;
@@ -671,15 +679,50 @@ static int sc_irq_callback(int int_level)
 	return M68K_INT_ACK_AUTOVECTOR;
 }
 
-static void vbl_timer(int refcon);
-static void sc_hint_timer(int refcon);
+#define SC_FPS 60.0
+#define SC_LINES 262.0
+#define SC_LINE_TIME ((1.0 / SC_FPS) / SC_LINES)
 
-static void sc_hint_timer(int refcon)
+static void sc_hint_trigger(int refcon)
 {
 	sc_hint_pending = 1;
 	update_68k_irq();
-	timer_set(1.0/240.0, 0, sc_hint_timer);
 }
+
+static void sc_vint_trigger(int refcon)
+{
+	vdp_status |= 8;
+	sc_vint_pending = 1;
+	update_68k_irq();
+}
+
+static void sc_vbl_out_trigger(int refcon)
+{
+	vdp_status &= ~8;
+}
+
+static void sc_frame_timer(int refcon)
+{
+	sc_frame_count++;
+
+	// Schedule 4 H-INTs during active display (lines 0-223)
+	// VDP Reg 10 is 0x34 (52 lines): lines 52, 105, 158, 211
+	timer_set(52.0 * SC_LINE_TIME, 0, sc_hint_trigger);
+	timer_set(105.0 * SC_LINE_TIME, 0, sc_hint_trigger);
+	timer_set(158.0 * SC_LINE_TIME, 0, sc_hint_trigger);
+	timer_set(211.0 * SC_LINE_TIME, 0, sc_hint_trigger);
+
+	// Schedule V-INT at line 224 (start of VBLANK)
+	timer_set(224.0 * SC_LINE_TIME, 0, sc_vint_trigger);
+
+	// End of VBLANK at line 261
+	timer_set(261.0 * SC_LINE_TIME, 0, sc_vbl_out_trigger);
+
+	// Next frame
+	timer_set(1.0 / SC_FPS, 0, sc_frame_timer);
+}
+
+static void vbl_timer(int refcon);
 
 static void vbl_out_timer(int refcon)
 {
@@ -710,11 +753,6 @@ static void vbl_timer(int refcon)
 		{
 			z80_ram[0x113]++;
 		}
-	}
-	if (Machine->refcon == 7)
-	{
-		sc_vint_pending = 1;
-		update_68k_irq();
 	}
 	timer_set((1.0/60.0)/262.0, 0, vbl_out_timer);
 }
@@ -916,8 +954,7 @@ static void Gen_Init(long srate)
 
 			memset(workram, 0, 64*1024);
 			timer_unspin_cpu(0);
-			timer_set(1.0/60.0, 0, vbl_timer);
-			timer_set(1.0/240.0, 0, sc_hint_timer);
+			timer_set(1.0 / SC_FPS, 0, sc_frame_timer);
 			break;
 		}
 
@@ -1208,6 +1245,7 @@ static void Gen_SendCmd(int cmda, int cmdb)
 			write_rom_16(p, 0x2000); p += 2; // move.w #$2000, sr
 			write_rom_16(p, 0x60fe); p += 2; // bra.b idle (-2)
 
+			sc_frame_count = 0;
 			sc_vint_pending = 0;
 			sc_hint_pending = 0;
 			m68k_set_int_ack_callback(sc_irq_callback);

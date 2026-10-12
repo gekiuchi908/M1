@@ -4739,10 +4739,24 @@ typedef struct
 	/* dac output (YM2612) */
 	int			dacen;
 	INT32		dacout;
+	INT32		dac_buf[4096];
+	int			dac_buf_pos;
+	int			dac_buf_read_pos;
 } YM2612;
 
 static int YM2612NumChips;	/* total chip */
 static YM2612 *FM2612=NULL;	/* array of YM2612's */
+
+void YM2612_new_frame(void)
+{
+	int n;
+	if (!FM2612) return;
+	for (n = 0; n < YM2612NumChips; n++)
+	{
+		FM2612[n].dac_buf_pos = 0;
+		FM2612[n].dac_buf_read_pos = 0;
+	}
+}
 
 static int dacen;
 
@@ -4753,7 +4767,6 @@ void YM2612UpdateOne(int num, INT16 **buffer, int length)
 	FM_OPN *OPN   = &(FM2612[num].OPN);
 	int i;
 	FMSAMPLE  *bufL,*bufR;
-	INT32 dacout  = F2612->dacout;
 
 	/* set bufer */
 	bufL = buffer[0];
@@ -4791,6 +4804,13 @@ void YM2612UpdateOne(int num, INT16 **buffer, int length)
 	refresh_fc_eg_chan( OPN, cch[4] );
 	refresh_fc_eg_chan( OPN, cch[5] );
 
+	int target_fill = F2612->dac_buf_read_pos + length;
+	if (target_fill > 4096) target_fill = 4096;
+	while (F2612->dac_buf_pos < target_fill)
+	{
+		F2612->dac_buf[F2612->dac_buf_pos++] = F2612->dacout;
+	}
+
 	/* buffering */
 	for(i=0; i < length ; i++)
 	{
@@ -4812,9 +4832,11 @@ void YM2612UpdateOne(int num, INT16 **buffer, int length)
 		chan_calc(OPN, cch[3], 3 );
 		chan_calc(OPN, cch[4], 4 );
 		if( dacen )
-			*cch[5]->connect4 += dacout;
+			*cch[5]->connect4 += F2612->dac_buf[(F2612->dac_buf_read_pos + i) & 4095];
 		else
 			chan_calc(OPN, cch[5], 5 );
+
+
 
 		/* advance envelope generator */
 		OPN->eg_timer += OPN->eg_timer_add;
@@ -4869,6 +4891,7 @@ void YM2612UpdateOne(int num, INT16 **buffer, int length)
 	}
 	INTERNAL_TIMER_B(State,length)
 
+	F2612->dac_buf_read_pos += length;
 }
 
 #ifdef _STATE_H
@@ -5007,6 +5030,10 @@ void YM2612ResetChip(int num)
 	for(i = 0x26 ; i >= 0x20 ; i-- ) OPNWriteReg(OPN,i,0);
 	/* DAC mode clear */
 	F2612->dacen = 0;
+	F2612->dacout = 0;
+	F2612->dac_buf_pos = 0;
+	F2612->dac_buf_read_pos = 0;
+	memset(F2612->dac_buf, 0, sizeof(F2612->dac_buf));
 }
 
 /* YM2612 write */
@@ -5042,8 +5069,17 @@ int YM2612Write(int n, int a, UINT8 v)
 			switch( addr )
 			{
 			case 0x2a:	/* DAC data (YM2612) */
-				YM2612UpdateReq(n);
-				F2612->dacout = ((int)v - 0x80) << 7;	/* level unknown */
+				{
+					extern double timer_get_cur_frame_time(void);
+					int target_pos = (int)(timer_get_cur_frame_time() * F2612->OPN.ST.rate);
+					if (target_pos < 0) target_pos = 0;
+					if (target_pos > 4096) target_pos = 4096;
+					while (F2612->dac_buf_pos < target_pos)
+					{
+						F2612->dac_buf[F2612->dac_buf_pos++] = F2612->dacout;
+					}
+					F2612->dacout = ((int)v - 0x80) << 7;	/* level unknown */
+				}
 				break;
 			case 0x2b:	/* DAC Sel  (YM2612) */
 				/* b7 = dac enable */

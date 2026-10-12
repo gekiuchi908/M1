@@ -208,6 +208,7 @@ void YM2612UpdateOne(int num, INT16 **buffer, int length);
 int YM2612Write(int n, int a,unsigned char v);
 unsigned char YM2612Read(int n,int a);
 int YM2612TimerOver(int n, int c );
+void YM2612_new_frame(void);
 #endif /* BUILD_YM2612 */
 
 #if 0 //BUILD_YM2151

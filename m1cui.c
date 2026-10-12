@@ -55,14 +55,21 @@ extern int lnxdrv_apimode;
 #include <iconv.h>
 #endif
 
+#include <signal.h>
+
 // version check
 #if M1UI_VERSION != 20
 #error M1UI VERSION MISMATCH!
 #endif
 
 static int max_games;
-static int quit;
+static volatile sig_atomic_t quit = 0;
 static char *rompath, *wavpath;
+
+static void sig_handler(int sig)
+{
+	quit = 1;
+}
 
 static int is_tty = 0;
 static int cur_song_num = -1;
@@ -887,6 +894,8 @@ int main(int argc, char *argv[])
 	tp.c_lflag &= ~ICANON;
 	tp.c_lflag &= ~(ECHO | ECHOCTL | ECHONL);
 	tcsetattr(STDIN_FILENO, TCSANOW, &tp);
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
 	#endif
 
 	// main loop
@@ -903,6 +912,7 @@ int main(int argc, char *argv[])
 		}
 		#endif
 		#if __linux__ || MACOS
+		if (quit) break;
 		if (!stdin_eof)
 		{
 			fds = STDIN_FILENO;
@@ -933,6 +943,7 @@ int main(int argc, char *argv[])
 			usleep(16666/8);
 			ch = 0;
 		}
+		if (quit) break;
 		#endif
 
 		if ((usetime) && (!ch))
