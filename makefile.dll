@@ -47,8 +47,9 @@ CUIOBJS = m1cui.o
 
 # Zlib objects (avoids dynamic link, allowing use with .NET / Mono)
 
-OBJS += zlib/adler32.o zlib/compress.o zlib/crc32.o zlib/gzio.o zlib/uncompr.o zlib/deflate.o zlib/trees.o
-OBJS += zlib/zutil.o zlib/inflate.o zlib/infback.o zlib/inftrees.o zlib/inffast.o
+OBJS += zlib/adler32.o zlib/deflate.o zlib/gzwrite.o zlib/inflate.o zlib/trees.o zlib/compress.o
+OBJS += zlib/gzlib.o zlib/infback.o zlib/inftrees.o zlib/uncompr.o zlib/crc32.o zlib/gzclose.o
+OBJS += zlib/gzread.o zlib/inffast.o zlib/zutil.o
 
 # Expat XML parser lib objects
 
@@ -104,7 +105,7 @@ OBJS += sound/bsmt2000.o sound/k005289.o sound/sn76496.o sound/namco.o sound/cem
 OBJS += sound/ymz280b.o sound/2203intf.o sound/2610intf.o sound/2612intf.o sound/3812intf.o
 OBJS += sound/k051649.o sound/2151intf.o sound/flower.o sound/ym2413.o sound/2413intf.o
 OBJS += sound/2608intf.o sound/vlm5030.o sound/262intf.o sound/ymf262.o sound/c352.o sound/ymf271.o
-OBJS += sound/dmadac.o sound/rf5c400.o sound/msm5232.o
+OBJS += sound/dmadac.o sound/rf5c400.o sound/msm5232.o sound/es5510.o
 
 # CPU cores
 OBJS += cpu/m68kcpu.o cpu/m68kops.o
