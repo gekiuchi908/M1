@@ -25,12 +25,12 @@ make
 ```
 
 ## Windows Status (Unverified)
- Relevant build changes and updates have been reflected in the Windows Makefile (makefile.dll).
- Note: The Windows build has not been compiled or tested in this release. Pull requests or test feedback are welcome!
+- Relevant build changes and updates have been reflected in the Windows Makefile (makefile.dll).
+- Note: The Windows build has not been compiled or tested in this release. Pull requests or test feedback are welcome!
 
 ## Credits & Acknowledgments
- Original Author: R. Belmont (M1 project)
- Assistance: agy (Google Antigravity CLI)
+- Original Author: R. Belmont (M1 project)
+- Assistance: agy (Google Antigravity CLI)
 
 
 
@@ -61,9 +61,9 @@ make
 ```
 
 ## Windows 版 (makefile.dll) について
-Linux 側で加えた変更・反映事項は Windows 用の makefile.dll にも適用済みです。
-注意: Windows 環境でのビルド確認および実機テストは行っておりません（未テスト状態です）。動作報告や PR を歓迎します。
+- Linux 側で加えた変更・反映事項は Windows 用の makefile.dll にも適用済みです。
+- 注意: Windows 環境でのビルド確認および実機テストは行っておりません（未テスト状態です）。動作報告や PR を歓迎します。
 
 ## クレジット・謝辞
- オリジナル版開発者: R. Belmont 氏
- 解析・修正支援: agy (Google Antigravity CLI)
+- オリジナル版開発者: R. Belmont 氏
+- 解析・修正支援: agy (Google Antigravity CLI)
