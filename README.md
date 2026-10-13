@@ -23,6 +23,7 @@ This is a fork/modified version of **M1** (arcade video and pinball sound emulat
 # Build on Linux
 make
 ```
+```markdown
 Windows Status (Unverified)
 
     Relevant build changes and updates have been reflected in the Windows Makefile (makefile.dll).
@@ -61,6 +62,7 @@ R. Belmont 氏によるアーケード／ピンボール音源エミュレータ
 ```bash
 make
 ```
+```markdown
 Windows 版 (makefile.dll) について
 
     Linux 側で加えた変更・反映事項は Windows 用の makefile.dll にも適用済みです。
