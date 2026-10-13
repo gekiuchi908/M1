@@ -173,14 +173,16 @@ enum
 
 	M1_SINF_EX_EXTRA,	// get "extra" text for a song, if any.  parm1 = the game, parm2 = the song,
 				// and parm3 = the text item number
-	M1_SINF_EX_TRKNAME,	// get track name.  parm1 = the game, parm2 = the song, parm3 = unused
-#define M1_SINF_EX_TRKNAM M1_SINF_EX_TRKNAME
 
 	// set commands.  these are for use only with m1snd_set_info_str!
 	M1_SINF_SET_TRKNAME,	// set track's name.  info = name, parm1 = game, parm2 = song, parm3 = unused
 	M1_SINF_SET_EXTRA,	// set "extra" text.  info = text parm1 = game, parm2 = song, parm3 = text item number
 	M1_SINF_SET_ROMPATH,	// set pathname to find a ROM at.  do this when you get the M1_MSG_MATCHPATH callback.
 	M1_SINF_SET_WAVPATH,	// set pathname to put .wavs at.  do this when you get the M1_MSG_GETWAVPATH callback.
+
+	// extended commands (continued)
+	M1_SINF_EX_TRKNAME,	// get track name.  parm1 = the game, parm2 = the song, parm3 = unused
+#define M1_SINF_EX_TRKNAM M1_SINF_EX_TRKNAME
 };
 
 // types for m1_set_info_int

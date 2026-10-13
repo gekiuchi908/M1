@@ -622,7 +622,7 @@ int main(int argc, char *argv[])
 	max_games = m1snd_get_info_int(M1_IINF_TOTALGAMES, 0);
 
 	printf("\nM1: arcade video and pinball sound emu by R. Belmont\n");
-	printf("Core ver %s, CUI ver 2.4\n", m1snd_get_info_str(M1_SINF_COREVERSION, 0)); 
+	printf("Core ver %s, CUI ver 2.5\n", m1snd_get_info_str(M1_SINF_COREVERSION, 0));
 	printf("Copyright (c) 2001-2010.  All Rights Reserved.\n\n");
 
 	cnf = fopen("m1.ini", "rt");

@@ -26,7 +26,7 @@
 
 #define WORKRAM_SIZE (1024*1024)
 
-#define M1SND_CORE_VERSION "0.7.9a1"
+#define M1SND_CORE_VERSION "0.8.0hk"
 
 #define PLAYLISTS_ON_DEMAND	(1)
 
