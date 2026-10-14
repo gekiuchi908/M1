@@ -1085,7 +1085,9 @@ int ES5506_sh_start(const struct MachineSound *msound)
 	for (i = 0; i < 8; i++)
 		chan_scratch[i] = malloc(sizeof(chan_scratch[0][0]) * MAX_SAMPLE_CHUNK);
 	for (i = 0; i < MAX_ES5506; i++)
-		s_pump_callback[i] = NULL;
+	{
+		/* preserve callback if already registered by board init */
+	}
 
 	if (!accumulator || !scratch)
 		return 1;

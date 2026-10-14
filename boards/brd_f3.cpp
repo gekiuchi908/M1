@@ -102,8 +102,12 @@ static void mb87078_write(uint32_t offset, uint8_t data)
 	else
 	{
 		mb87078_data = data & 0x3f;
-		mb87078_channel_latch[mb87078_control & 3] = ((mb87078_control << 4) & 0x1c0) | mb87078_data;
-		mb87078_recalc();
+		uint16_t new_latch = ((mb87078_control << 4) & 0x1c0) | mb87078_data;
+		if (new_latch != mb87078_channel_latch[mb87078_control & 3])
+		{
+			mb87078_channel_latch[mb87078_control & 3] = new_latch;
+			mb87078_recalc();
+		}
 	}
 }
 
@@ -124,19 +128,32 @@ static void f3_pump_callback(int chip,
 	INT32 ch3_l, INT32 ch3_r,
 	INT32 *out_l, INT32 *out_r)
 {
-	auto clamp16 = [](INT32 val) -> int16_t {
-		INT32 v = val >> 4;
+	float vol_l = (float)(mb87078_channel_latch[2] & 0x3f) / 32.0f;
+	float vol_r = (float)(mb87078_channel_latch[3] & 0x3f) / 32.0f;
+
+	// In MAME taito_en, ensoniq routes to pump with gain 0.18 * (vol / 32.0)
+	float in_gain_l = 0.18f * vol_l;
+	float in_gain_r = 0.18f * vol_r;
+
+	auto clamp16_l = [in_gain_l](INT32 val) -> int16_t {
+		INT32 v = (INT32)(val * in_gain_l) >> 4;
+		if (v > 32767) return 32767;
+		if (v < -32768) return -32768;
+		return (int16_t)v;
+	};
+	auto clamp16_r = [in_gain_r](INT32 val) -> int16_t {
+		INT32 v = (INT32)(val * in_gain_r) >> 4;
 		if (v > 32767) return 32767;
 		if (v < -32768) return -32768;
 		return (int16_t)v;
 	};
 
-	es5510.ser_w(0, clamp16(ch1_l)); // FX1 L
-	es5510.ser_w(1, clamp16(ch1_r)); // FX1 R
-	es5510.ser_w(2, clamp16(ch2_l)); // FX2 L
-	es5510.ser_w(3, clamp16(ch2_r)); // FX2 R
-	es5510.ser_w(4, clamp16(ch3_l)); // DRY L
-	es5510.ser_w(5, clamp16(ch3_r)); // DRY R
+	es5510.ser_w(0, clamp16_l(ch1_l)); // FX1 L
+	es5510.ser_w(1, clamp16_r(ch1_r)); // FX1 R
+	es5510.ser_w(2, clamp16_l(ch2_l)); // FX2 L
+	es5510.ser_w(3, clamp16_r(ch2_r)); // FX2 R
+	es5510.ser_w(4, clamp16_l(ch3_l)); // DRY L
+	es5510.ser_w(5, clamp16_r(ch3_r)); // DRY R
 
 	if (!esp_halted)
 	{
@@ -146,14 +163,28 @@ static void f3_pump_callback(int chip,
 	int16_t wet_l = es5510.ser_r(6);
 	int16_t wet_r = es5510.ser_r(7);
 
-	INT32 esp_l = ((INT32)wet_l) << 4;
-	INT32 esp_r = ((INT32)wet_r) << 4;
+	// In MAME taito_en, pump routes to speaker with gain 0.5 * (vol / 32.0).
+	// In M1 standalone output, 1.0 * (vol / 32.0) brings peak audio level to ~7200,
+	// exactly matching the PCB reference recording without clipping.
+	float out_gain_l = 1.0f * vol_l;
+	float out_gain_r = 1.0f * vol_r;
 
-	*out_l = (INT32)((esp_l + ch0_l) * 0.5f * mb87078_gain[2]);
-	*out_r = (INT32)((esp_r + ch0_r) * 0.5f * mb87078_gain[3]);
+	INT32 aux_l = (INT32)((ch0_l >> 4) * in_gain_l);
+	INT32 aux_r = (INT32)((ch0_r >> 4) * in_gain_r);
+
+	// es5506_update() shifts right by 4 (*lsrc++ >> 4) when writing to 16-bit sound buffer.
+	// We scale by << 4 so that the effective volume matches 16-bit DAC amplitude.
+	*out_l = (INT32)((wet_l + aux_l) * out_gain_l) << 4;
+	*out_r = (INT32)((wet_r + aux_r) * out_gain_r) << 4;
 }
 
-#define M68681_CLOCK	2000000 /* Actually X1, not the main clock */
+// MC68681 DUART clock:
+// The sequencer calculates ticks using Bresenham DDA: accum += tempo; accum -= 625;
+// For standard 24 PPQN (96 ticks/quarter note), 625 * 96 = 60,000, so a 1000 Hz timer yields BPM = tempo.
+// However, F3 sequencer songs use 100 ticks/quarter note (625 * 100 = 62,500),
+// requiring a timer frequency of 62500 / 60 = 1041.6667 Hz (25/24 ratio) for BPM to equal the tempo setting.
+// With timer count = 2000 ($7d0), the effective timer clock is 2000 * (62500 / 60) = 25000000 / 12 = 2083333.33 Hz.
+#define M68681_CLOCK	(25000000.0 / 12.0) /* Actually X1 / 2 for timer mode */
 
 enum { TIMER_SINGLESHOT, TIMER_PULSE };
 
@@ -822,6 +853,7 @@ void Play(int code)
 
 static void F3_SendCmd(int cmda, int cmdb)
 {
+	ES5505_set_pump_callback(0, f3_pump_callback);
 	addr = commram[0x480]<<8 | commram[0x481];
 //	printf("addr in = %x, 68k last=%x\n", addr, commram[0x0482]<<8|commram[0x0483]);
 	addr /= 2;
